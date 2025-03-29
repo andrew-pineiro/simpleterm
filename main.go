@@ -4,8 +4,10 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
+	"os/user"
 	"runtime"
 	"strings"
 )
@@ -16,49 +18,59 @@ func get_newline() string {
 	}
 	return "\n"
 }
-func write(msg string) {
-	fmt.Printf(">> %s", msg)
-}
-func try_execute(name string) bool {
-	_, err := exec.LookPath(name)
+func try_execute(buf string) bool {
+
+	program := buf
+	if strings.Contains(buf, " ") {
+		program = strings.Split(buf, " ")[0]
+	}
+	_, err := exec.LookPath(program)
 	if err != nil {
 		return false
 	}
-	cmd := exec.Command(name)
+	cmd := exec.Command(program)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Args = append(cmd.Args, strings.Split(buf, " ")[1:]...)
+
 	if errors.Is(cmd.Err, exec.ErrDot) {
 		cmd.Err = nil
 	}
-	if err := cmd.Run(); err != nil {
-		fmt.Printf("Unable to run program %s - %s\n", name, err)
-	}
+	cmd.Run()
 	return true
 
 }
 func main() {
 
+	//curr_dir, _ := os.Getwd()
+	curr_user, _ := user.Current()
 	reader := bufio.NewReader(os.Stdin)
 	for {
-		fmt.Print("> ")
+		fmt.Printf("%s> ", curr_user.Username)
 
 		buffer, err := reader.ReadString('\n')
+		if errors.Is(err, io.EOF) {
+			os.Exit(0)
+		}
 		if err != nil {
 			panic(err)
 		}
-		cmd := strings.Replace(buffer, get_newline(), "", -1)
+		if len(strings.TrimSpace(buffer)) > 0 {
+			cmd := strings.Replace(buffer, get_newline(), "", -1)
 
-		//SYSTEM APPS
-		if try_execute(cmd) {
-			continue
+			//SYSTEM APPS
+			if try_execute(cmd) {
+				continue
+			}
+
+			//CUSTOM CMDS
+			switch cmd {
+			case "exit":
+				os.Exit(0)
+			default:
+				fmt.Printf("%s\n", cmd)
+			}
 		}
 
-		//CUSTOM CMDS
-		switch cmd {
-		case "exit":
-			os.Exit(0)
-		case "hello":
-			write("Hello World!\n")
-		default:
-			write(fmt.Sprintf("Command not implemented %s", buffer))
-		}
 	}
 }
