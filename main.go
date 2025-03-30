@@ -1,28 +1,38 @@
 package main
 
 import (
-	"bufio"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
-	"os/user"
-	"runtime"
+	"path"
 	"strings"
+
+	"github.com/chzyer/readline"
 )
 
-func get_newline() string {
-	if runtime.GOOS == "windows" {
-		return "\r\n"
-	}
-	return "\n"
-}
-func try_execute(buf string) bool {
+const TEMP_FILE_NAME = "sterm.tmp"
 
-	program := buf
-	if strings.Contains(buf, " ") {
-		program = strings.Split(buf, " ")[0]
+type context struct {
+	working_dir string
+	cmd         string
+	args        []string
+}
+
+var c = &context{}
+
+func filterInput(r rune) (rune, bool) {
+	switch r {
+	case readline.CharCtrlZ:
+		return r, false
 	}
+	return r, true
+}
+func try_execute() bool {
+
+	program := c.cmd
+
 	_, err := exec.LookPath(program)
 	if err != nil {
 		return false
@@ -30,7 +40,7 @@ func try_execute(buf string) bool {
 	cmd := exec.Command(program)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	cmd.Args = append(cmd.Args, strings.Split(buf, " ")[1:]...)
+	cmd.Args = c.args
 
 	if errors.Is(cmd.Err, exec.ErrDot) {
 		cmd.Err = nil
@@ -39,48 +49,72 @@ func try_execute(buf string) bool {
 	return true
 
 }
-func try_cmd(buf string) bool {
-	cmd := buf
-	if strings.Contains(buf, " ") {
-		cmd = strings.Split(buf, " ")[0]
+
+func try_cmd() bool {
+	switch c.cmd {
+	case "cd":
+		cd()
+	case "ls", "dir":
+		ls()
+	case "echo":
+		echo()
+	case "cp":
+		cp()
+	default:
+		return false
 	}
-	args := strings.Split(buf, " ")[1:]
-	if len(cmd) > 0 {
-		switch cmd {
-		case "exit":
-			os.Exit(0)
-		case "ls", "dir":
-			ls()
-		case "echo":
-			echo(args)
-		case "cp":
-			cp(args)
-		default:
-			return false
-		}
-		return true
-	}
-	return false
+	return true
 }
 func main() {
+	//curr_user, _ := user.Current()
+	c.working_dir, _ = os.Getwd()
+	temp_dir, _ := os.MkdirTemp("", ".sterm")
+	cfg := &readline.Config{
+		HistoryFile:     path.Join(temp_dir, "sterm.tmp"),
+		InterruptPrompt: "^C",
+		AutoComplete:    completer,
+		EOFPrompt:       "exit",
 
-	//curr_dir, _ := os.Getwd()
-	curr_user, _ := user.Current()
-	reader := bufio.NewReader(os.Stdin)
-	for {
-		fmt.Printf("%s> ", curr_user.Username)
-
-		buffer, err := reader.ReadString('\n')
-		if err != nil {
-			panic(err)
-		}
-		cmd := strings.Replace(buffer, get_newline(), "", -1)
-		if try_execute(cmd) {
-			continue
-		}
-		if try_cmd(cmd) {
-			continue
-		}
-		fmt.Printf("Command not found %s\n", cmd)
+		HistorySearchFold:   true,
+		FuncFilterInputRune: filterInput,
 	}
+	reader, err := readline.NewEx(cfg)
+	if err != nil {
+		panic(err)
+	}
+	defer reader.Close()
+	defer os.Remove(temp_dir)
+	reader.CaptureExitSignal()
+
+	for {
+		reader.SetPrompt(c.working_dir + "> ")
+		line, err := reader.Readline()
+		if err == io.EOF {
+			break
+		}
+		line = strings.TrimSpace(line)
+
+		//CHECK FOR BLANK
+		if len(line) == 0 {
+			continue
+		}
+		c.cmd = line
+		if strings.Contains(line, " ") {
+			c.cmd = strings.Split(line, " ")[0]
+		}
+		c.args = strings.Split(line, " ")[1:]
+		//EXIT
+		if c.cmd == "exit" {
+			goto exit
+		}
+
+		if try_cmd() {
+			continue
+		}
+		if try_execute() {
+			continue
+		}
+		fmt.Printf("Command not found %s\n", c.cmd)
+	}
+exit:
 }

@@ -4,21 +4,25 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 )
 
-func echo(args []string) {
-	for i := range args {
-		fmt.Printf("%s ", args[i])
+func echo() {
+	if len(c.args) == 0 {
+		return
+	}
+	for i := range c.args {
+		fmt.Printf("%s ", c.args[i])
 	}
 	fmt.Println()
 }
-func cp(args []string) {
-	if len(args) < 2 {
+func cp() {
+	if len(c.args) < 2 {
 		return
 	}
-	source := args[0]
-	dest := args[1]
+	source := c.args[0]
+	dest := c.args[1]
 	if _, err := os.Stat(source); errors.Is(err, os.ErrNotExist) {
 		fmt.Printf("ERROR: %s does not exist\n", source)
 		return
@@ -30,9 +34,33 @@ func cp(args []string) {
 	}
 	os.WriteFile(dest, contents, os.FileMode(os.O_CREATE))
 }
+func cd() {
+	if len(c.args) != 1 {
+		fmt.Printf("ERROR: invalid arguments.")
+		return
+	}
+	new_path, err := filepath.Abs(c.args[0])
+	if errors.Is(err, os.ErrNotExist) {
+		fmt.Printf("ERROR: %s does not exist\n", new_path)
+		return
+	}
+	// if new_path_str[:1] == "."+string(os.PathSeparator) ||
+	// 	!strings.Contains(new_path_str, string(os.PathSeparator)) {
+	// 	new_path_str = path.Join(c.working_dir, new_path_str)
+	// }
+	_, err = os.Stat(new_path)
+	if errors.Is(err, os.ErrNotExist) {
+		fmt.Printf("ERROR: %s does not exist\n", new_path)
+		return
+	}
+	// if !new_path.IsDir() {
+	// 	fmt.Printf("ERROR: %s is not a directory\n", new_path.Name())
+	// }
+	c.working_dir = new_path
+	os.Chdir(new_path)
+}
 func ls() {
-	dir, _ := os.Getwd()
-	files, err := os.ReadDir(".")
+	files, err := os.ReadDir(c.working_dir)
 	if err != nil {
 		return
 	}
@@ -40,7 +68,7 @@ func ls() {
 		return
 	}
 
-	fmt.Printf("\n  Directory: %s\n\n", dir)
+	fmt.Printf("\n  Directory: %s\n\n", c.working_dir)
 	fmt.Printf("Mode\t\tModified\t\tSize\tName\n")
 	fmt.Printf("----\t\t--------\t\t----\t----\n")
 	for _, file := range files {
