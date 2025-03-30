@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
 	"os/user"
@@ -40,6 +39,27 @@ func try_execute(buf string) bool {
 	return true
 
 }
+func try_cmd(buf string) bool {
+	cmd := buf
+	if strings.Contains(buf, " ") {
+		cmd = strings.Split(buf, " ")[0]
+	}
+	args := strings.Split(buf, " ")[1:]
+	if len(cmd) > 0 {
+		switch cmd {
+		case "exit":
+			os.Exit(0)
+		case "ls", "dir":
+			ls()
+		case "echo":
+			echo(args)
+		default:
+			return false
+		}
+		return true
+	}
+	return false
+}
 func main() {
 
 	//curr_dir, _ := os.Getwd()
@@ -49,28 +69,16 @@ func main() {
 		fmt.Printf("%s> ", curr_user.Username)
 
 		buffer, err := reader.ReadString('\n')
-		if errors.Is(err, io.EOF) {
-			os.Exit(0)
-		}
 		if err != nil {
 			panic(err)
 		}
-		if len(strings.TrimSpace(buffer)) > 0 {
-			cmd := strings.Replace(buffer, get_newline(), "", -1)
-
-			//SYSTEM APPS
-			if try_execute(cmd) {
-				continue
-			}
-
-			//CUSTOM CMDS
-			switch cmd {
-			case "exit":
-				os.Exit(0)
-			default:
-				fmt.Printf("%s\n", cmd)
-			}
+		cmd := strings.Replace(buffer, get_newline(), "", -1)
+		if try_execute(cmd) {
+			continue
 		}
-
+		if try_cmd(cmd) {
+			continue
+		}
+		fmt.Printf("Command not found %s\n", cmd)
 	}
 }
