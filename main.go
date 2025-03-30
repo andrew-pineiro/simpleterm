@@ -53,6 +53,8 @@ func try_cmd(buf string) bool {
 			ls()
 		case "echo":
 			echo(args)
+		case "cp":
+			cp(args)
 		default:
 			return false
 		}

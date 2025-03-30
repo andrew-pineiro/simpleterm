@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -11,6 +12,23 @@ func echo(args []string) {
 		fmt.Printf("%s ", args[i])
 	}
 	fmt.Println()
+}
+func cp(args []string) {
+	if len(args) < 2 {
+		return
+	}
+	source := args[0]
+	dest := args[1]
+	if _, err := os.Stat(source); errors.Is(err, os.ErrNotExist) {
+		fmt.Printf("ERROR: %s does not exist\n", source)
+		return
+	}
+	contents, err := os.ReadFile(source)
+	if err != nil {
+		fmt.Printf("ERROR: unable to copy file %s\n", source)
+		return
+	}
+	os.WriteFile(dest, contents, os.FileMode(os.O_CREATE))
 }
 func ls() {
 	dir, _ := os.Getwd()
