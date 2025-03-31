@@ -11,13 +11,9 @@ var completer = readline.NewPrefixCompleter(
 	readline.PcItem("ls"),
 	readline.PcItem("dir"),
 	readline.PcItem("cp",
-		readline.PcItemDynamic(
-			list_files(c.working_dir),
-		)),
+		readline.PcItemDynamic(list_files(c.working_dir))),
 	readline.PcItem("cd",
-		readline.PcItemDynamic(
-			list_files(c.working_dir),
-		)),
+		readline.PcItemDynamic(list_files(c.working_dir))),
 	readline.PcItem("echo"),
 )
 
