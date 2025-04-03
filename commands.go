@@ -3,27 +3,36 @@ package main
 import (
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
-	"sort"
 	"strconv"
+	"strings"
 )
 
-func echo() {
-	if len(c.args) == 0 {
+type stFile struct {
+	fileName    string
+	fileModTime string
+	fileMode    fs.FileMode
+	fileIsDir   bool
+	fileSize    string
+}
+
+func echo(args []string) {
+	if len(args) == 0 {
 		return
 	}
-	for i := range c.args {
-		fmt.Printf("%s ", c.args[i])
+	for i := range args {
+		fmt.Printf("%s ", args[i])
 	}
 	fmt.Println()
 }
-func cp() {
-	if len(c.args) < 2 {
+func cp(args []string) {
+	if len(args) < 2 {
 		return
 	}
-	source := c.args[0]
-	dest := c.args[1]
+	source := args[0]
+	dest := args[1]
 	if _, err := os.Stat(source); errors.Is(err, os.ErrNotExist) {
 		fmt.Printf("ERROR: %s does not exist\n", source)
 		return
@@ -35,78 +44,174 @@ func cp() {
 	}
 	os.WriteFile(dest, contents, os.FileMode(os.O_CREATE))
 }
-func cd() {
-	if len(c.args) != 1 {
+func cd(args []string) {
+	if len(args) < 1 {
 		fmt.Printf("ERROR: invalid arguments.")
 		return
 	}
-	new_path, err := filepath.Abs(c.args[0])
-	if errors.Is(err, os.ErrNotExist) {
-		fmt.Printf("ERROR: %s does not exist\n", new_path)
+	newPath, err := filepath.Abs(args[0])
+	if errors.Is(err, fs.ErrNotExist) {
+		fmt.Printf("ERROR: %s does not exist\n", newPath)
 		return
 	}
-	// if new_path_str[:1] == "."+string(os.PathSeparator) ||
-	// 	!strings.Contains(new_path_str, string(os.PathSeparator)) {
-	// 	new_path_str = path.Join(c.working_dir, new_path_str)
-	// }
-	_, err = os.Stat(new_path)
-	if errors.Is(err, os.ErrNotExist) {
-		fmt.Printf("ERROR: %s does not exist\n", new_path)
+	_, err = os.Stat(newPath)
+	if errors.Is(err, fs.ErrNotExist) {
+		fmt.Printf("ERROR: %s does not exist\n", newPath)
 		return
 	}
-	// if !new_path.IsDir() {
-	// 	fmt.Printf("ERROR: %s is not a directory\n", new_path.Name())
-	// }
-	c.working_dir = new_path
-	os.Chdir(new_path)
+	if errors.Is(err, fs.ErrPermission) {
+		fmt.Printf("ERROR: permission denied to %s", newPath)
+		return
+	}
+	os.Chdir(newPath)
 }
-func sort_by_name_asc(entries []os.DirEntry) {
-	sort.Slice(entries, func(i, j int) bool {
-		return entries[i].Name() < entries[j].Name()
-	})
-}
-func ls() {
-	var dirs []os.DirEntry
-	var files []os.DirEntry
-	f, err := os.ReadDir(c.working_dir)
-	for _, file := range f {
-		if file.IsDir() {
-			dirs = append(dirs, file)
-		} else {
-			files = append(files, file)
+
+func ls(args []string) {
+	showHidden := false
+	rootDir, _ := os.Getwd()
+	if len(args) > 0 {
+		for _, arg := range args {
+			if arg == "-h" || arg == "-la" {
+				showHidden = true
+			}
+			if arg[0] != '-' {
+				_, err := os.Stat(arg)
+				if !errors.Is(err, fs.ErrNotExist) {
+					rootDir = arg
+				}
+			}
 		}
 	}
-
-	sort_by_name_asc(dirs)
-	sort_by_name_asc(files)
+	absDir, _ := filepath.Abs(rootDir)
+	var dirs []stFile
+	var files []stFile
+	f, err := os.ReadDir(absDir)
+	if err != nil {
+		fmt.Printf("ERROR: %s\n", err)
+		return
+	}
+	for _, file := range f {
+		fileInfo, _ := file.Info()
+		var newFile = stFile{
+			fileName:    file.Name(),
+			fileModTime: fileInfo.ModTime().Format("1/2/2006 3:04 PM"),
+			fileMode:    fileInfo.Mode(),
+			fileIsDir:   file.IsDir(),
+			fileSize:    strconv.FormatInt(fileInfo.Size(), 10),
+		}
+		if newFile.fileIsDir || strings.HasPrefix(newFile.fileMode.String(), "L") {
+			dirs = append(dirs, newFile)
+		} else {
+			files = append(files, newFile)
+		}
+	}
+	sortByNameAsc(dirs)
+	sortByNameAsc(files)
 	if err != nil {
 		return
 	}
-	if len(files) <= 0 {
+	if len(files)+len(dirs) <= 0 {
 		return
 	}
 
-	fmt.Printf("\n  Directory: %s\n\n", c.working_dir)
-	fmt.Printf("Mode\t\tModified\t\tSize\tName\n")
-	fmt.Printf("----\t\t--------\t\t----\t----\n")
-	for _, file := range dirs {
-		file, _ := file.Info()
-		size := " "
-		name := file.Name()
-		if file.Name()[0] == '.' {
-			continue
-		}
-		fmt.Printf("%s\t%s\t%s\t\033[37;44;1m%s\033[0m\n", file.Mode(), file.ModTime().Format("1/2/2006 3:04 PM"), size, name)
-	}
-	for _, file := range files {
-		file, _ := file.Info()
-		size := strconv.FormatInt(file.Size(), 10)
-		name := file.Name()
+	fmt.Printf("\n  Directory: %s\n\n", absDir)
+	maxModeWidth := len("Mode")
+	maxDateWidth := len("Modified")
+	maxSizeWidth := len("Size")
+	maxNameWidth := len("Name")
 
-		if file.Name()[0] == '.' {
+	var allEntries []stFile
+	allEntries = append(allEntries, dirs...)
+	allEntries = append(allEntries, files...)
+
+	for _, entry := range allEntries {
+		if !showHidden && isHidden(entry.fileName, entry.fileIsDir) {
 			continue
 		}
-		fmt.Printf("%s\t%s\t%s\t%s\n", file.Mode(), file.ModTime().Format("1/2/2006 3:04 PM"), size, name)
+		mode := entry.fileMode.String()
+		modified := entry.fileModTime
+		size := entry.fileSize
+		name := entry.fileName
+		if len(mode) > maxModeWidth {
+			maxModeWidth = len(mode)
+		}
+		if len(modified) > maxDateWidth {
+			maxDateWidth = len(modified)
+		}
+		if len(size) > maxSizeWidth {
+			maxSizeWidth = len(size)
+		}
+		if len(name) > maxNameWidth {
+			maxNameWidth = len(name)
+		}
+	}
+
+	fmt.Printf("%-*s  %-*s  %*s  %-*s\n",
+		maxModeWidth, "Mode",
+		maxDateWidth, "Modified",
+		maxSizeWidth, "Size",
+		maxNameWidth, "Name")
+
+	fmt.Printf("%s  %s  %s  %s\n",
+		strings.Repeat("-", maxModeWidth),
+		strings.Repeat("-", maxDateWidth),
+		strings.Repeat("-", maxSizeWidth),
+		strings.Repeat("-", maxNameWidth))
+
+	for _, entry := range dirs {
+		size := " "
+		name := fmt.Sprintf("\033[37;44;1m%s\033[0m", entry.fileName) // Blue background for directories
+
+		if !showHidden {
+			path, _ := filepath.Abs(name)
+			if isHidden(path, true) {
+				continue
+			}
+		}
+
+		fmt.Printf("%-*s  %-*s  %*s  %-*s\n",
+			maxModeWidth, entry.fileMode,
+			maxDateWidth, entry.fileModTime,
+			maxSizeWidth, size,
+			maxNameWidth, name)
+	}
+
+	for _, entry := range files {
+		if !showHidden {
+			path, _ := filepath.Abs(entry.fileName)
+			if isHidden(path, false) {
+				continue
+			}
+		}
+
+		fmt.Printf("%-*s  %-*s  %*s  %-*s\n",
+			maxModeWidth, entry.fileMode,
+			maxDateWidth, entry.fileModTime,
+			maxSizeWidth, entry.fileSize,
+			maxNameWidth, entry.fileName)
 	}
 	fmt.Println()
+}
+
+func rm(args []string) {
+	if len(args) < 1 {
+		fmt.Printf("ERROR: invalid arguments.")
+		return
+	}
+	rawPath := args[0]
+	if strings.Contains(rawPath, "*") {
+		//TODO: implement wildcard matching
+	}
+
+	path, _ := filepath.Abs(rawPath)
+	_, err := os.Stat(path)
+	if err != nil {
+		fmt.Printf("ERROR: %s", err)
+		return
+	}
+
+	err = os.Remove(path)
+	if err != nil {
+		fmt.Printf("ERROR: %s", err)
+	}
 }

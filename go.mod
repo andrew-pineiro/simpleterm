@@ -1,6 +1,8 @@
 module sterm
 
-go 1.22.2
+go 1.23.0
+
+toolchain go1.23.7
 
 require github.com/chzyer/readline v1.5.1
 

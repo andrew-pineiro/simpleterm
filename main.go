@@ -12,15 +12,7 @@ import (
 	"github.com/chzyer/readline"
 )
 
-const TEMP_FILE_NAME = "sterm.tmp"
-
-type context struct {
-	working_dir string
-	cmd         string
-	args        []string
-}
-
-var c = &context{}
+const TEMP_FILENAME = "sterm.tmp"
 
 func filterInput(r rune) (rune, bool) {
 	switch r {
@@ -29,50 +21,13 @@ func filterInput(r rune) (rune, bool) {
 	}
 	return r, true
 }
-func try_execute() bool {
-
-	program := c.cmd
-
-	_, err := exec.LookPath(program)
-	if err != nil {
-		return false
-	}
-	cmd := exec.Command(program)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	cmd.Args = c.args
-
-	if errors.Is(cmd.Err, exec.ErrDot) {
-		cmd.Err = nil
-	}
-	cmd.Run()
-	return true
-
-}
-
-func try_cmd() bool {
-	switch c.cmd {
-	case "cd":
-		cd()
-	case "ls", "dir":
-		ls()
-	case "echo":
-		echo()
-	case "cp":
-		cp()
-	default:
-		return false
-	}
-	return true
-}
-func main() {
-	//curr_user, _ := user.Current()
-	c.working_dir, _ = os.Getwd()
-	temp_dir, _ := os.MkdirTemp("", ".sterm")
+func newRlInstance() *readline.Instance {
+	currDir, _ := os.Getwd()
+	tempDir, _ := os.MkdirTemp(currDir, ".sterm")
 	cfg := &readline.Config{
-		HistoryFile:     path.Join(temp_dir, "sterm.tmp"),
+		HistoryFile:     path.Join(tempDir, "sterm.tmp"),
 		InterruptPrompt: "^C",
-		AutoComplete:    completer,
+		AutoComplete:    createCompleter(),
 		EOFPrompt:       "exit",
 
 		HistorySearchFold:   true,
@@ -82,39 +37,95 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	defer reader.Close()
-	defer os.Remove(temp_dir)
+	return reader
+}
+func tryExecute(program string, args []string) bool {
+
+	_, err := exec.LookPath(program)
+	if err != nil {
+		return false
+	}
+	cmd := exec.Command(program)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Args = args
+
+	if errors.Is(cmd.Err, exec.ErrDot) {
+		cmd.Err = nil
+	}
+	cmd.Run()
+	return true
+
+}
+
+func tryCmd(cmd string, args []string) bool {
+	switch cmd {
+	case "rm":
+		rm(args)
+	case "cd":
+		cd(args)
+	case "ls", "dir":
+		ls(args)
+	case "echo":
+		echo(args)
+	case "cp":
+		cp(args)
+	case "pwd":
+		wd, _ := os.Getwd()
+		fmt.Printf("%s\n", wd)
+	default:
+		return false
+	}
+	return true
+}
+func main() {
+	//currUser, _ := user.Current()
+	homeDir, _ := os.UserHomeDir()
+	os.Chdir(homeDir)
+	tempDir, _ := os.MkdirTemp("", "")
+
+	reader := newRlInstance()
 	reader.CaptureExitSignal()
 
+	defer reader.Close()
+
 	for {
-		reader.SetPrompt(c.working_dir + "> ")
+		wd, _ := os.Getwd()
+		reader.SetPrompt(wd + "> ")
+
 		line, err := reader.Readline()
 		if err == io.EOF {
 			break
 		}
-		line = strings.TrimSpace(line)
 
 		//CHECK FOR BLANK
 		if len(line) == 0 {
 			continue
 		}
-		c.cmd = line
+
+		cmd := strings.TrimSpace(line)
+		var args []string
 		if strings.Contains(line, " ") {
-			c.cmd = strings.Split(line, " ")[0]
+			cmd = strings.Split(line, " ")[0]
+			args = strings.Split(line, " ")[1:]
 		}
-		c.args = strings.Split(line, " ")[1:]
+
 		//EXIT
-		if c.cmd == "exit" {
+		if cmd == "exit" {
 			goto exit
 		}
 
-		if try_cmd() {
+		if tryCmd(cmd, args) {
+			reader.Config.AutoComplete = createCompleter()
 			continue
 		}
-		if try_execute() {
+
+		if tryExecute(cmd, args) {
 			continue
 		}
-		fmt.Printf("Command not found %s\n", c.cmd)
+
+		fmt.Printf("Command not found %s\n", cmd)
 	}
 exit:
+	os.RemoveAll(tempDir)
 }
