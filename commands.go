@@ -107,9 +107,7 @@ func ls(args []string) {
 	}
 	sortByNameAsc(dirs)
 	sortByNameAsc(files)
-	if err != nil {
-		return
-	}
+
 	if len(files)+len(dirs) <= 0 {
 		return
 	}
