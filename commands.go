@@ -163,7 +163,7 @@ func ls(args []string) {
 		name := fmt.Sprintf("\033[37;44;1m%s\033[0m", entry.fileName) // Blue background for directories
 
 		if !showHidden {
-			path, _ := filepath.Abs(name)
+			path, _ := filepath.Abs(entry.fileName)
 			if isHidden(path, true) {
 				continue
 			}

@@ -6,7 +6,6 @@ import (
 	"io"
 	"os"
 	"os/exec"
-	"path"
 	"strings"
 
 	"github.com/chzyer/readline"
@@ -22,10 +21,10 @@ func filterInput(r rune) (rune, bool) {
 	return r, true
 }
 func newRlInstance() *readline.Instance {
-	currDir, _ := os.Getwd()
-	tempDir, _ := os.MkdirTemp(currDir, ".sterm")
+	//currDir, _ := os.Getwd()
+	//tempDir, _ := os.MkdirTemp(currDir, ".sterm")
 	cfg := &readline.Config{
-		HistoryFile:     path.Join(tempDir, "sterm.tmp"),
+		//HistoryFile:     path.Join(tempDir, "sterm.tmp"),
 		InterruptPrompt: "^C",
 		AutoComplete:    createCompleter(),
 		EOFPrompt:       "exit",
@@ -82,7 +81,6 @@ func main() {
 	//currUser, _ := user.Current()
 	homeDir, _ := os.UserHomeDir()
 	os.Chdir(homeDir)
-	tempDir, _ := os.MkdirTemp("", "")
 
 	reader := newRlInstance()
 	reader.CaptureExitSignal()
@@ -127,5 +125,5 @@ func main() {
 		fmt.Printf("Command not found %s\n", cmd)
 	}
 exit:
-	os.RemoveAll(tempDir)
+	//os.RemoveAll(tempDir)
 }

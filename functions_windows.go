@@ -16,7 +16,7 @@ func sortByNameAsc(entries []stFile) {
 // checks if a file is hidden on Windows.
 func isHidden(path string, isDir bool) bool {
 	const dotChar = 46
-	if path[0] == dotChar && isDir {
+	if filepath.Base(path)[0] == dotChar && isDir {
 		return true
 	}
 	if strings.Contains(strings.ToLower(filepath.Base(path)), "ntuser") {
@@ -30,6 +30,7 @@ func isHidden(path string, isDir bool) bool {
 	// Appending `\\?\` to the absolute path helps with
 	// preventing 'Path Not Specified Error' when accessing long paths and filenames
 	// https://docs.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation?tabs=cmd
+
 	pointer, err := syscall.UTF16PtrFromString(`\\?\` + absPath)
 	if err != nil {
 		return false

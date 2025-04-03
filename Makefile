@@ -9,7 +9,7 @@ GOARCH ?= $(shell go env GOARCH)
 
 # Single build with specified GOOS/GOARCH
 build:
-		go build -o $(BUILD_DIR)/$(BINARY_NAME)-$(GOOS)-$(GOARCH).exe
+	go build -o $(BUILD_DIR)/$(BINARY_NAME)-$(GOOS)-$(GOARCH).exe
 
 # Build for multiple platforms
 build-all:
