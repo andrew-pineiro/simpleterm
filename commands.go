@@ -198,7 +198,7 @@ func rm(args []string) {
 	}
 	rawPath := args[0]
 	if strings.Contains(rawPath, "*") {
-		//TODO: implement wildcard matching
+		//TODO(#1): implement wildcard matching
 	}
 
 	path, _ := filepath.Abs(rawPath)
