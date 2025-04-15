@@ -69,6 +69,8 @@ func tryCmd(cmd string, args []string) bool {
 		echo(args)
 	case "cp":
 		cp(args)
+	case "cat":
+		cat(args)
 	case "pwd":
 		wd, _ := os.Getwd()
 		fmt.Printf("%s\n", wd)

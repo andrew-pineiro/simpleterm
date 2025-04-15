@@ -16,14 +16,5 @@ func isHidden(path string, _ bool) bool {
 	const dotChar = 46
 	base := filepath.Base(path)
 
-	if base[0] == dotChar {
-		return true
-	}
-
-	_, err := filepath.Abs(path)
-	if err != nil {
-		return false
-	}
-
-	return false
+	return base[0] == dotChar
 }

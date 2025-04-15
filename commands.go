@@ -213,3 +213,17 @@ func rm(args []string) {
 		fmt.Printf("ERROR: %s", err)
 	}
 }
+
+func cat(args []string) {
+	if len(args) < 1 {
+		return
+	}
+	file := args[0]
+	_, err := os.Stat(file)
+	if err != nil {
+		return
+	}
+
+	content, _ := os.ReadFile(file)
+	fmt.Printf("%s", content)
+}
