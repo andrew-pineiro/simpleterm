@@ -10,13 +10,19 @@ func createCompleter() *readline.PrefixCompleter {
 	wd, _ := os.Getwd()
 	return readline.NewPrefixCompleter(
 		readline.PcItem("exit"),
-		readline.PcItem("ls"),
-		readline.PcItem("dir"),
+		readline.PcItem("cat",
+			readline.PcItemDynamic(listFiles(wd, false, true))),
+		readline.PcItem("ls",
+			readline.PcItemDynamic(listFiles(wd, true, true))),
+		readline.PcItem("dir",
+			readline.PcItemDynamic(listFiles(wd, true, true))),
 		readline.PcItem("cp",
 			readline.PcItemDynamic(listFiles(wd, false, true))),
 		readline.PcItem("cd",
 			readline.PcItemDynamic(listFiles(wd, true, true))),
 		readline.PcItem("echo"),
+		readline.PcItem("rm",
+			readline.PcItemDynamic(listFiles(wd, false, true))),
 	)
 }
 

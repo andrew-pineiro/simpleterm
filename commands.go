@@ -73,12 +73,11 @@ func ls(args []string) {
 		for _, arg := range args {
 			if arg == "-h" || arg == "-la" {
 				showHidden = true
+				continue
 			}
-			if arg[0] != '-' {
-				_, err := os.Stat(arg)
-				if !errors.Is(err, fs.ErrNotExist) {
-					rootDir = arg
-				}
+			_, err := os.Stat(arg)
+			if !errors.Is(err, fs.ErrNotExist) {
+				rootDir = arg
 			}
 		}
 	}

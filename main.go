@@ -30,7 +30,7 @@ func newRlInstance() *readline.Instance {
 		HistoryFile:     path.Join(histDir, HIST_FILENAME),
 		InterruptPrompt: "^C",
 		AutoComplete:    createCompleter(),
-		EOFPrompt:       "exit",
+		EOFPrompt:       "",
 
 		HistorySearchFold:   true,
 		FuncFilterInputRune: filterInput,
@@ -59,6 +59,7 @@ func tryExecute(program string, args []string) bool {
 	cmd := exec.Command(program)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+	cmd.Stdin = os.Stdin
 	cmd.Args = _args
 
 	if errors.Is(cmd.Err, exec.ErrDot) {
@@ -107,11 +108,10 @@ func main() {
 
 		line, err := reader.Readline()
 		if err == io.EOF {
-			break
+			goto exit
 		}
-
-		//CHECK FOR BLANK
-		if len(line) == 0 {
+		//CHECK FOR INTERRUPT OR BLANK
+		if err == readline.ErrInterrupt || len(line) == 0 {
 			continue
 		}
 
@@ -126,12 +126,10 @@ func main() {
 		if cmd == "exit" {
 			goto exit
 		}
-
 		if tryCmd(cmd, args) {
 			reader.Config.AutoComplete = createCompleter()
 			continue
 		}
-
 		if tryExecute(cmd, args) {
 			continue
 		}
