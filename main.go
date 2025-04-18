@@ -6,12 +6,13 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path"
 	"strings"
 
 	"github.com/chzyer/readline"
 )
 
-const TEMP_FILENAME = "sterm.tmp"
+const HIST_FILENAME = "sterm.hst"
 
 func filterInput(r rune) (rune, bool) {
 	switch r {
@@ -22,9 +23,11 @@ func filterInput(r rune) (rune, bool) {
 }
 func newRlInstance() *readline.Instance {
 	//currDir, _ := os.Getwd()
-	//tempDir, _ := os.MkdirTemp(currDir, ".sterm")
+	homeDir, _ := os.UserHomeDir()
+	histDir := path.Join(homeDir, ".sterm")
+	_ = os.Mkdir(histDir, 0700)
 	cfg := &readline.Config{
-		//HistoryFile:     path.Join(tempDir, "sterm.tmp"),
+		HistoryFile:     path.Join(histDir, HIST_FILENAME),
 		InterruptPrompt: "^C",
 		AutoComplete:    createCompleter(),
 		EOFPrompt:       "exit",
@@ -39,15 +42,24 @@ func newRlInstance() *readline.Instance {
 	return reader
 }
 func tryExecute(program string, args []string) bool {
-
 	_, err := exec.LookPath(program)
 	if err != nil {
 		return false
 	}
+
+	//This is required because of the way exec handles args
+	//Requires program to be first argument
+	var _args []string
+	_args = append(_args, program)
+	for i := 0; i < len(args); i++ {
+		_args = append(_args, args[i])
+
+	}
+
 	cmd := exec.Command(program)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	cmd.Args = args
+	cmd.Args = _args
 
 	if errors.Is(cmd.Err, exec.ErrDot) {
 		cmd.Err = nil
