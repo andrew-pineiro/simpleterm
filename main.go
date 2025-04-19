@@ -52,7 +52,6 @@ func tryExecute(program string, args []string) bool {
 	var _args []string
 	_args = append(_args, program)
 	for i := 0; i < len(args); i++ {
-		fmt.Printf("DEBUG: added arg %s\n", args[i])
 		_args = append(_args, args[i])
 
 	}
