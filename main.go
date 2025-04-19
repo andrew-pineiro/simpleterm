@@ -119,21 +119,24 @@ func main() {
 		cmd := strings.TrimSpace(line)
 		var args []string
 		if strings.Contains(line, " ") {
-			cmd = strings.Split(line, " ")[0]
-			a := strings.Split(line, " ")[1:]
-			for i := 0; i < len(a); i++ {
-				buffer := a[i]
-				if a[i][0] == '"' {
-					for j := i + 1; j < len(a); j++ {
-						buffer += fmt.Sprintf(" %s", a[j])
-						if strings.ContainsRune(a[j], '"') {
-							break
+			l := strings.Split(line, " ")
+			cmd = l[0]
+			if len(l) > 1 {
+				a := l[1:]
+				for i := 0; i < len(a); i++ {
+					buffer := a[i]
+					if strings.TrimSpace(a[i]) != "" && a[i][0] == '"' {
+						for j := i + 1; j < len(a); j++ {
+							buffer += fmt.Sprintf(" %s", a[j])
+							if strings.ContainsRune(a[j], '"') {
+								break
+							}
+							i = j + 1
+							continue
 						}
-						i = j + 1
-						continue
 					}
+					args = append(args, buffer)
 				}
-				args = append(args, buffer)
 			}
 		}
 
