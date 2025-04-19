@@ -128,6 +128,7 @@ func main() {
 					if strings.TrimSpace(a[i]) != "" && a[i][0] == '"' {
 						for j := i + 1; j < len(a); j++ {
 							buffer += fmt.Sprintf(" %s", a[j])
+							//TODO: check for quote in middle of string
 							if strings.ContainsRune(a[j], '"') {
 								break
 							}
