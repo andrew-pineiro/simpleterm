@@ -52,6 +52,7 @@ func tryExecute(program string, args []string) bool {
 	var _args []string
 	_args = append(_args, program)
 	for i := 0; i < len(args); i++ {
+		fmt.Printf("DEBUG: added arg %s\n", args[i])
 		_args = append(_args, args[i])
 
 	}
@@ -110,6 +111,7 @@ func main() {
 		if err == io.EOF {
 			goto exit
 		}
+
 		//CHECK FOR INTERRUPT OR BLANK
 		if err == readline.ErrInterrupt || len(line) == 0 {
 			continue
@@ -119,17 +121,33 @@ func main() {
 		var args []string
 		if strings.Contains(line, " ") {
 			cmd = strings.Split(line, " ")[0]
-			args = strings.Split(line, " ")[1:]
+			a := strings.Split(line, " ")[1:]
+			for i := 0; i < len(a); i++ {
+				buffer := a[i]
+				if a[i][0] == '"' {
+					for j := i + 1; j < len(a); j++ {
+						buffer += fmt.Sprintf(" %s", a[j])
+						if strings.ContainsRune(a[j], '"') {
+							break
+						}
+						i = j + 1
+						continue
+					}
+				}
+				args = append(args, buffer)
+			}
 		}
 
 		//EXIT
 		if cmd == "exit" {
 			goto exit
 		}
+
 		if tryCmd(cmd, args) {
 			reader.Config.AutoComplete = createCompleter()
 			continue
 		}
+
 		if tryExecute(cmd, args) {
 			continue
 		}
@@ -137,5 +155,4 @@ func main() {
 		fmt.Printf("Command not found %s\n", cmd)
 	}
 exit:
-	//os.RemoveAll(tempDir)
 }
