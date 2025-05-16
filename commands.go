@@ -9,13 +9,66 @@ import (
 	"strconv"
 	"strings"
 )
-
+var commands = map[string]func([]string){
+	"rm":   rm,
+	"cd":   cd,
+	"ls":   ls,
+	"dir":  ls,    // alias
+	"echo": echo,
+	"cp":   cp,
+	"cat":  cat,
+	"pwd": func(args []string) {
+		wd, err := os.Getwd()
+		if err != nil {
+			fmt.Println("Error:", err)
+			return
+		}
+		fmt.Println(wd)
+	},
+}
 type stFile struct {
 	fileName    string
 	fileModTime string
 	fileMode    fs.FileMode
 	fileIsDir   bool
 	fileSize    string
+}
+
+func tryExecute(program string, args []string) bool {
+	_, err := exec.LookPath(program)
+	if err != nil {
+		return false
+	}
+
+	//This is required because of the way exec handles args
+	//Requires program to be first argument
+	var _args []string
+	_args = append(_args, program)
+	for i := 0; i < len(args); i++ {
+		_args = append(_args, args[i])
+
+	}
+
+	cmd := exec.Command(program)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Stdin = os.Stdin
+	cmd.Args = _args
+
+	if errors.Is(cmd.Err, exec.ErrDot) {
+		cmd.Err = nil
+	}
+	cmd.Run()
+	return true
+
+}
+
+func tryCmd(cmd string, args []string) bool {
+	if fn, ok := commands[cmd]; ok {
+		fn(args)
+		return true
+	}
+	return false
 }
 
 func echo(args []string) {

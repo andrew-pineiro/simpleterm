@@ -43,57 +43,6 @@ func newRlInstance() *readline.Instance {
 	return reader
 }
 
-func tryExecute(program string, args []string) bool {
-	_, err := exec.LookPath(program)
-	if err != nil {
-		return false
-	}
-
-	//This is required because of the way exec handles args
-	//Requires program to be first argument
-	var _args []string
-	_args = append(_args, program)
-	for i := 0; i < len(args); i++ {
-		_args = append(_args, args[i])
-
-	}
-
-	cmd := exec.Command(program)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	cmd.Stdin = os.Stdin
-	cmd.Args = _args
-
-	if errors.Is(cmd.Err, exec.ErrDot) {
-		cmd.Err = nil
-	}
-	cmd.Run()
-	return true
-
-}
-
-func tryCmd(cmd string, args []string) bool {
-	switch cmd {
-	case "rm":
-		rm(args)
-	case "cd":
-		cd(args)
-	case "ls", "dir":
-		ls(args)
-	case "echo":
-		echo(args)
-	case "cp":
-		cp(args)
-	case "cat":
-		cat(args)
-	case "pwd":
-		wd, _ := os.Getwd()
-		fmt.Printf("%s\n", wd)
-	default:
-		return false
-	}
-	return true
-}
 func parseCmdArgs(line string) (string, []string) {
 	var args []string
 	
@@ -108,7 +57,7 @@ func parseCmdArgs(line string) (string, []string) {
 					buffer += fmt.Sprintf(" %s", a[j])
 
 					i = j + 1
-					fmt.Printf("DEBUG: %s\n", a[j])
+					
 					//TODO(#2): check for quote in middle of string
 					if strings.ContainsRune(a[j], '"') {
 						break
@@ -145,7 +94,7 @@ func main() {
 		if err == readline.ErrInterrupt || len(line) == 0 {
 			continue
 		}
-		
+
 		cmd, args := parseCmdArgs(line)
 		
 		//EXIT
