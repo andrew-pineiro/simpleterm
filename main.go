@@ -21,6 +21,7 @@ func filterInput(r rune) (rune, bool) {
 	}
 	return r, true
 }
+
 func newRlInstance() *readline.Instance {
 	//currDir, _ := os.Getwd()
 	homeDir, _ := os.UserHomeDir()
@@ -41,6 +42,7 @@ func newRlInstance() *readline.Instance {
 	}
 	return reader
 }
+
 func tryExecute(program string, args []string) bool {
 	_, err := exec.LookPath(program)
 	if err != nil {
@@ -92,6 +94,34 @@ func tryCmd(cmd string, args []string) bool {
 	}
 	return true
 }
+func parseCmdArgs(line string) (string, []string) {
+	var args []string
+	
+	l := strings.Split(line, " ")
+	cmd := l[0]
+	if len(l) > 1 {
+		a := l[1:]
+		for i := 0; i < len(a); i++ {
+			buffer := a[i]
+			if strings.TrimSpace(a[i]) != "" && a[i][0] == '"' {
+				for j := i + 1; j < len(a); j++ {
+					buffer += fmt.Sprintf(" %s", a[j])
+
+					i = j + 1
+					fmt.Printf("DEBUG: %s\n", a[j])
+					//TODO(#2): check for quote in middle of string
+					if strings.ContainsRune(a[j], '"') {
+						break
+					}
+
+					continue
+				}
+			}
+			args = append(args, buffer)
+		}
+	}
+	return cmd, args
+}
 func main() {
 	//currUser, _ := user.Current()
 	homeDir, _ := os.UserHomeDir()
@@ -115,35 +145,9 @@ func main() {
 		if err == readline.ErrInterrupt || len(line) == 0 {
 			continue
 		}
-
-		cmd := strings.TrimSpace(line)
-		var args []string
-		if strings.Contains(line, " ") {
-			l := strings.Split(line, " ")
-			cmd = l[0]
-			if len(l) > 1 {
-				a := l[1:]
-				for i := 0; i < len(a); i++ {
-					buffer := a[i]
-					if strings.TrimSpace(a[i]) != "" && a[i][0] == '"' {
-						for j := i + 1; j < len(a); j++ {
-							buffer += fmt.Sprintf(" %s", a[j])
-
-							i = j + 1
-
-							//TODO(#2): check for quote in middle of string
-							if strings.ContainsRune(a[j], '"') {
-								break
-							}
-
-							continue
-						}
-					}
-					args = append(args, buffer)
-				}
-			}
-		}
-
+		
+		cmd, args := parseCmdArgs(line)
+		
 		//EXIT
 		if cmd == "exit" {
 			goto exit
