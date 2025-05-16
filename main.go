@@ -1,11 +1,9 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
 	"path"
 	"strings"
 
@@ -114,4 +112,5 @@ func main() {
 		fmt.Printf("Command not found %s\n", cmd)
 	}
 exit:
+	return
 }
