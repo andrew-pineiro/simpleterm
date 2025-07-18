@@ -4,20 +4,27 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
+
+	"golang.org/x/net/icmp"
+	"golang.org/x/net/ipv4"
 )
+
 var commands = map[string]func([]string){
 	"rm":   rm,
 	"cd":   cd,
 	"ls":   ls,
-	"dir":  ls,    // alias
+	"dir":  ls, // alias
 	"echo": echo,
 	"cp":   cp,
 	"cat":  cat,
+	"ping": ping,
 	"pwd": func(args []string) {
 		wd, err := os.Getwd()
 		if err != nil {
@@ -27,6 +34,7 @@ var commands = map[string]func([]string){
 		fmt.Println(wd)
 	},
 }
+
 type stFile struct {
 	fileName    string
 	fileModTime string
@@ -83,6 +91,7 @@ func echo(args []string) {
 }
 func cp(args []string) {
 	if len(args) < 2 {
+		//TODO: print help for cp
 		return
 	}
 	source := args[0]
@@ -100,6 +109,7 @@ func cp(args []string) {
 }
 func cd(args []string) {
 	if len(args) < 1 {
+		//TODO: print help for cd
 		fmt.Printf("ERROR: invalid arguments.")
 		return
 	}
@@ -119,7 +129,46 @@ func cd(args []string) {
 	}
 	os.Chdir(newPath)
 }
+func ping(args []string) {
+	if len(args) < 1 {
+		//TODO: print help for ping
+		return
+	}
+	//TODO: add more args
+	ip := args[0]
+	conn, err := icmp.ListenPacket("ip4:icmp", "0.0.0.0")
+	if err != nil {
+		fmt.Printf("ERROR: unable to establish socket - %s\n", err.Error())
+		return
+	}
+	defer conn.Close()
 
+	msg := icmp.Message{
+		Type: ipv4.ICMPTypeEcho,
+		Code: 0,
+		Body: &icmp.Echo{
+			ID:   os.Getpid() & 0xffff,
+			Seq:  1,
+			Data: []byte("000000000000000"),
+		},
+	}
+
+	bytes, err := msg.Marshal(nil)
+	if err != nil {
+		fmt.Printf("ERROR: could not marshal content - %s\n", err.Error())
+		return
+	}
+	for i := 0; i < 4; i++ {
+		time.Sleep(time.Second * 1)
+		_, err := conn.WriteTo(bytes, &net.IPAddr{IP: net.ParseIP(ip)})
+		if err != nil {
+			fmt.Printf("ERROR: could not open connection - %s\n", err.Error())
+			return
+		}
+		fmt.Printf("Successfully connected to %s\n", ip)
+	}
+
+}
 func ls(args []string) {
 	showHidden := false
 	rootDir, _ := os.Getwd()
