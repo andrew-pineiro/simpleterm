@@ -3,8 +3,10 @@ package main
 import (
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"net"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -131,16 +133,20 @@ func cd(args []string) {
 	os.Chdir(newPath)
 }
 func checkip(args []string) {
+	var output string
 	interfaces, err := net.Interfaces()
 	if err != nil {
-		//TODO: handle error for checkip
+		fmt.Printf("ERROR: Unable to establish network interfaces: %s\n", err)
+		return
 	}
 
 	for _, i := range interfaces {
 		addrs, err := i.Addrs()
 		if err != nil {
-			//TODO: handle error for check ip addrs
+			fmt.Printf("ERROR: Cannot retrieve address from interface %s: %s\n", i.Name, err)
+			return
 		}
+		output = "Interface: " + i.Name
 		for _, addr := range addrs {
 			var ip net.IP
 			switch v := addr.(type) {
@@ -150,12 +156,27 @@ func checkip(args []string) {
 				ip = v.IP
 			}
 			if ip.DefaultMask() == nil {
-				fmt.Printf("Interface: %s IPv6: %s\n", i.Name, ip.String())
+				output += " - IPv6: " + ip.String()
 			} else {
-				fmt.Printf("Interface: %s IPv4: %s\n", i.Name, ip.String())
+				output += " - IPv4: " + ip.String()
 			}
 		}
+		fmt.Println(output)
 	}
+
+	resp, err := http.Get("https://api.ipify.org")
+	if err != nil {
+		fmt.Printf("ERROR: Unable to get public IP: %s\n", err)
+		return
+	}
+	defer resp.Body.Close()
+
+	ip, err := io.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Printf("ERROR: Unable to read response: %s\n", err)
+		return
+	}
+	fmt.Printf("Public IP: %s", string(ip))
 }
 func ping(args []string) {
 	if len(args) < 1 {
