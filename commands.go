@@ -17,14 +17,15 @@ import (
 )
 
 var commands = map[string]func([]string){
-	"rm":   rm,
-	"cd":   cd,
-	"ls":   ls,
-	"dir":  ls, // alias
-	"echo": echo,
-	"cp":   cp,
-	"cat":  cat,
-	"ping": ping,
+	"rm":      rm,
+	"cd":      cd,
+	"ls":      ls,
+	"dir":     ls, // alias
+	"echo":    echo,
+	"cp":      cp,
+	"cat":     cat,
+	"ping":    ping,
+	"checkip": checkip,
 	"pwd": func(args []string) {
 		wd, err := os.Getwd()
 		if err != nil {
@@ -128,6 +129,33 @@ func cd(args []string) {
 		return
 	}
 	os.Chdir(newPath)
+}
+func checkip(args []string) {
+	interfaces, err := net.Interfaces()
+	if err != nil {
+		//TODO: handle error for checkip
+	}
+
+	for _, i := range interfaces {
+		addrs, err := i.Addrs()
+		if err != nil {
+			//TODO: handle error for check ip addrs
+		}
+		for _, addr := range addrs {
+			var ip net.IP
+			switch v := addr.(type) {
+			case *net.IPNet:
+				ip = v.IP
+			case *net.IPAddr:
+				ip = v.IP
+			}
+			if ip.DefaultMask() == nil {
+				fmt.Printf("Interface: %s IPv6: %s\n", i.Name, ip.String())
+			} else {
+				fmt.Printf("Interface: %s IPv4: %s\n", i.Name, ip.String())
+			}
+		}
+	}
 }
 func ping(args []string) {
 	if len(args) < 1 {
