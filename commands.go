@@ -220,11 +220,16 @@ func ping(args []string) {
 }
 func ls(args []string) {
 	showHidden := false
+	wildCardExten := ""
 	rootDir, _ := os.Getwd()
 	if len(args) > 0 {
 		for _, arg := range args {
 			if arg == "-h" || arg == "-la" {
 				showHidden = true
+				continue
+			}
+			if strings.HasPrefix(arg, "*") && len(arg) > 2 {
+				wildCardExten = strings.Replace(arg, "*.", "", -1)
 				continue
 			}
 			_, err := os.Stat(arg)
@@ -249,6 +254,9 @@ func ls(args []string) {
 			fileMode:    fileInfo.Mode(),
 			fileIsDir:   file.IsDir(),
 			fileSize:    strconv.FormatInt(fileInfo.Size(), 10),
+		}
+		if wildCardExten != "" && !strings.HasSuffix(newFile.fileName, wildCardExten) {
+			continue
 		}
 		if newFile.fileIsDir || strings.HasPrefix(newFile.fileMode.String(), "L") {
 			dirs = append(dirs, newFile)
