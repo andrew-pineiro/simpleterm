@@ -23,6 +23,7 @@ var commands = map[string]func([]string){
 	"cd":      cd,
 	"ls":      ls,
 	"dir":     ls, // alias
+	"file":    file,
 	"echo":    echo,
 	"cp":      cp,
 	"cat":     cat,
@@ -217,6 +218,22 @@ func ping(args []string) {
 		fmt.Printf("Successfully connected to %s\n", ip)
 	}
 
+}
+func file(args []string) {
+	if len(args) > 0 {
+		absPath, _ := filepath.Abs(args[0])
+		fmt.Println(absPath)
+		//github.com/gabriel-vasile/mimetype
+		file, err := os.Stat(absPath)
+		if err != nil {
+			fmt.Printf("ERROR: could not read file - %s\n", err.Error())
+			return
+		}
+		if file.IsDir() {
+			return
+		}
+		fmt.Printf("%s - %s - %s", file.Name(), file.ModTime(), file.Sys())
+	}
 }
 func ls(args []string) {
 	showHidden := false

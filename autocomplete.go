@@ -8,8 +8,11 @@ import (
 
 func createCompleter() *readline.PrefixCompleter {
 	wd, _ := os.Getwd()
+	//TODO: update with new functions
 	return readline.NewPrefixCompleter(
 		readline.PcItem("exit"),
+		readline.PcItem("file",
+			readline.PcItemDynamic(listFiles(wd, false, true))),
 		readline.PcItem("cat",
 			readline.PcItemDynamic(listFiles(wd, false, true))),
 		readline.PcItem("ls",

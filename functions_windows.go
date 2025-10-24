@@ -15,10 +15,10 @@ func sortByNameAsc(entries []stFile) {
 
 // checks if a file is hidden on Windows.
 func isHidden(path string, isDir bool) bool {
-	const dotChar = 46
-	if filepath.Base(path)[0] == dotChar && isDir {
-		return true
-	}
+	//const dotChar = 46
+	// if filepath.Base(path)[0] == dotChar && isDir {
+	// 	return true
+	// }
 	if strings.Contains(strings.ToLower(filepath.Base(path)), "ntuser") {
 		return true
 	}
