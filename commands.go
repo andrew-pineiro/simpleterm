@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"math/big"
 	"net"
 	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -29,6 +31,8 @@ var commands = map[string]func([]string){
 	"cat":     cat,
 	"ping":    ping,
 	"checkip": checkip,
+	"track":   track,
+	"open":    open,
 	"pwd": func(args []string) {
 		wd, err := os.Getwd()
 		if err != nil {
@@ -402,4 +406,76 @@ func cat(args []string) {
 
 	content, _ := os.ReadFile(file)
 	fmt.Printf("%s", content)
+}
+
+func track(args []string) {
+	if len(args) < 1 {
+		return
+	}
+	trackId := strings.ToUpper(args[0])
+
+	if len(trackId) <= 0 {
+		return
+	}
+
+	var fedexLengths = map[int]struct{}{
+		10: {},
+		12: {},
+		15: {},
+		20: {},
+		22: {},
+		34: {},
+	}
+
+	if strings.HasPrefix(trackId, "1Z") || len(trackId) == 9 || strings.HasPrefix(trackId, "K") || strings.HasPrefix(trackId, "H") {
+		open([]string{"https://www.ups.com/track?tracknum=" + trackId + "&AgreeToTermsAndConditions=yes&loc=en_US"})
+	} else if _, ok := new(big.Int).SetString(trackId, 10); ok {
+		if (strings.HasPrefix(trackId, "94") && len(trackId) == 22) || strings.HasSuffix(trackId, "US") {
+			open([]string{"http://trkcnfrm1.smi.usps.com/PTSInternetWeb/InterLabelInquiry.do?origTrackNum=" + trackId})
+		} else if _, ok := fedexLengths[len(trackId)]; ok {
+			open([]string{"https://fedex.com/fedextrack/?tracknumbers=" + trackId})
+		}
+
+	} else {
+		fmt.Println("ERROR: Unable to verify carrier for tracking id: " + trackId)
+	}
+}
+func open(args []string) {
+	if len(args) < 1 {
+		return
+	}
+	var cmd string
+	var execArgs []string
+	url := args[0]
+
+	switch runtime.GOOS {
+	case "windows":
+		cmd = "cmd.exe"
+		execArgs = []string{"/c", "rundll32", "url.dll,FileProtocolHandler", strings.ReplaceAll(url, "&", "^&")}
+	case "darwin":
+		cmd = "open"
+		execArgs = []string{url}
+	default:
+		if isWSL() {
+			cmd = "cmd.exe"
+			execArgs = []string{"start", url}
+		} else {
+			cmd = "xdg-open"
+			execArgs = []string{url}
+		}
+	}
+
+	e := exec.Command(cmd, execArgs...)
+	err := e.Start()
+	if err != nil {
+		fmt.Printf("ERROR: %s", err)
+		return
+	}
+	err = e.Wait()
+	if err != nil {
+		fmt.Printf("ERROR: %s", err)
+		return
+	}
+
+	return
 }

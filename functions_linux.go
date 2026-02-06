@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -17,4 +18,12 @@ func isHidden(path string, _ bool) bool {
 	base := filepath.Base(path)
 
 	return base[0] == dotChar
+}
+
+func isWSL() bool {
+	releaseData, err := exec.Command("uname", "-r").Output()
+	if err != nil {
+		return false
+	}
+	return strings.Contains(strings.ToLower(string(releaseData)), "microsoft")
 }

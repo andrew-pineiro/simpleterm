@@ -43,3 +43,6 @@ func isHidden(path string, isDir bool) bool {
 
 	return attributes&syscall.FILE_ATTRIBUTE_HIDDEN != 0
 }
+func isWSL() bool {
+	return false
+}
