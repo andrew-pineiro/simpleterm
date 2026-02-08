@@ -43,7 +43,7 @@ func newRlInstance() *readline.Instance {
 
 func parseCmdArgs(line string) (string, []string) {
 	var args []string
-	
+
 	l := strings.Split(line, " ")
 	cmd := l[0]
 	if len(l) > 1 {
@@ -55,7 +55,7 @@ func parseCmdArgs(line string) (string, []string) {
 					buffer += fmt.Sprintf(" %s", a[j])
 
 					i = j + 1
-					
+
 					//TODO(#2): check for quote in middle of string
 					if strings.ContainsRune(a[j], '"') {
 						break
@@ -94,7 +94,7 @@ func main() {
 		}
 
 		cmd, args := parseCmdArgs(line)
-		
+
 		//EXIT
 		if cmd == "exit" {
 			goto exit

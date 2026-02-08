@@ -16,10 +16,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gabriel-vasile/mimetype"
 	"golang.org/x/net/icmp"
 	"golang.org/x/net/ipv4"
 )
 
+// TODO: add generic help printing to all commands
 var commands = map[string]func([]string){
 	"rm":      rm,
 	"cd":      cd,
@@ -99,7 +101,6 @@ func echo(args []string) {
 }
 func cp(args []string) {
 	if len(args) < 2 {
-		//TODO: print help for cp
 		return
 	}
 	source := args[0]
@@ -117,8 +118,6 @@ func cp(args []string) {
 }
 func cd(args []string) {
 	if len(args) < 1 {
-		//TODO: print help for cd
-		fmt.Printf("ERROR: invalid arguments.")
 		return
 	}
 	newPath, err := filepath.Abs(args[0])
@@ -181,11 +180,10 @@ func checkip(args []string) {
 		fmt.Printf("ERROR: Unable to read response: %s\n", err)
 		return
 	}
-	fmt.Printf("Public IP: %s", string(ip))
+	fmt.Printf("Public IP: %s\n", string(ip))
 }
 func ping(args []string) {
 	if len(args) < 1 {
-		//TODO: print help for ping
 		return
 	}
 	//TODO: add more args
@@ -226,8 +224,6 @@ func ping(args []string) {
 func file(args []string) {
 	if len(args) > 0 {
 		absPath, _ := filepath.Abs(args[0])
-		fmt.Println(absPath)
-		//github.com/gabriel-vasile/mimetype
 		file, err := os.Stat(absPath)
 		if err != nil {
 			fmt.Printf("ERROR: could not read file - %s\n", err.Error())
@@ -236,7 +232,12 @@ func file(args []string) {
 		if file.IsDir() {
 			return
 		}
-		fmt.Printf("%s - %s - %s", file.Name(), file.ModTime(), file.Sys())
+		mtype, err := mimetype.DetectFile(absPath)
+		if err != nil {
+			fmt.Printf("ERROR: could not parse file type - %s\n", err.Error())
+			return
+		}
+		fmt.Printf("%s - %s\n", file.Name(), mtype.String())
 	}
 }
 func ls(args []string) {
