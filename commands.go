@@ -374,24 +374,67 @@ func ls(args []string) {
 
 func rm(args []string) {
 	if len(args) < 1 {
-		fmt.Printf("ERROR: invalid arguments.")
+		fmt.Printf("ERROR: invalid arguments.\n")
 		return
 	}
+	var files []string
 	rawPath := args[0]
 	if strings.Contains(rawPath, "*") {
-		//TODO(#1): implement wildcard matching
+		wd, _ := os.Getwd()
+		path, _ := filepath.Abs(wd)
+		if len(rawPath) > strings.Index(rawPath, "*")+1 && string(rawPath[strings.Index(rawPath, "*")+1]) == "." {
+			ext := string(filepath.Ext(rawPath))
+			f, err := os.ReadDir(path)
+			if err != nil {
+				fmt.Printf("ERROR: unable to read directory - %s\n", err)
+				return
+			}
+			for _, file := range f {
+				if strings.HasSuffix(file.Name(), ext) {
+					absFilePath, _ := filepath.Abs(file.Name())
+					files = append(files, absFilePath)
+				}
+			}
+		} else if strings.Replace(rawPath, "*", "", -1) != "" {
+			if strings.HasSuffix(rawPath, "*") {
+				wordMatch := strings.Replace(rawPath, "*", "", -1)
+				f, err := os.ReadDir(path)
+				if err != nil {
+					fmt.Printf("ERROR: unable to read directory - %s\n", err)
+					return
+				}
+				for _, file := range f {
+					if strings.Contains(file.Name(), wordMatch) {
+						absFilePath, _ := filepath.Abs(file.Name())
+						files = append(files, absFilePath)
+					}
+				}
+			}
+		} else {
+			f, err := os.ReadDir(path)
+			if err != nil {
+				fmt.Printf("ERROR: unable to read directory - %s\n", err)
+				return
+			}
+			for _, file := range f {
+				absFilePath, _ := filepath.Abs(file.Name())
+				files = append(files, absFilePath)
+			}
+		}
+	} else {
+		path, _ := filepath.Abs(rawPath)
+		_, err := os.Stat(path)
+		if err != nil {
+			fmt.Printf("ERROR: %s", err)
+			return
+		}
+		files = append(files, path)
 	}
-
-	path, _ := filepath.Abs(rawPath)
-	_, err := os.Stat(path)
-	if err != nil {
-		fmt.Printf("ERROR: %s", err)
-		return
-	}
-
-	err = os.Remove(path)
-	if err != nil {
-		fmt.Printf("ERROR: %s", err)
+	for _, file := range files {
+		err := os.Remove(file)
+		if err != nil {
+			fmt.Printf("ERROR: %s", err)
+		}
 	}
 }
 

@@ -48,7 +48,7 @@ func listFiles(path string, onlyDir bool, showHidden bool, onlyFile bool) func(s
 				continue
 			}
 			name := f.Name()
-			//TODO: get autocomplete to work with spaces on folder / file names
+			//TODO(#3): get autocomplete to work with spaces on folder / file names
 			// if strings.ContainsAny(name, " ") {
 			// 	name = "\"" + name + "\""
 			// }
