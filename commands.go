@@ -12,6 +12,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -36,6 +37,7 @@ var commands = map[string]func([]string){
 	"track":   track,
 	"open":    open,
 	"disk":    disk,
+	"help":    not,
 	"pwd": func(args []string) {
 		wd, err := os.Getwd()
 		if err != nil {
@@ -54,6 +56,13 @@ type stFile struct {
 	fileSize    string
 }
 
+func not(args []string) {
+	f := "UNKNOWN"
+	if len(args) > 0 {
+		f = args[0]
+	}
+	fmt.Printf("ERROR: not implemented - %s\n", f)
+}
 func tryExecute(program string, args []string) bool {
 	_, err := exec.LookPath(program)
 	if err != nil {
@@ -531,8 +540,14 @@ func disk(args []string) {
 		fmt.Printf("ERROR: Unable to retreive drives - %s", err)
 		return
 	}
+	slices.Sort(drives)
+
 	for drive, space := range getDiskSpaceAvailable(drives) {
-		fmt.Printf("%s: %dGB\n", drive, space)
+		//TODO: implement a check for non-storage drives like disc drives.
+		if space <= 0 {
+			continue
+		}
+		fmt.Printf("%s: %d GB Remaining\n", drive, space)
 	}
 	return
 }

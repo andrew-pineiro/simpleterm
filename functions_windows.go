@@ -10,6 +10,10 @@ import (
 	"golang.org/x/sys/windows"
 )
 
+func isWSL() bool {
+	return false
+}
+
 func sortByNameAsc(entries []stFile) {
 	sort.Slice(entries, func(i, j int) bool {
 		return strings.ToLower(entries[i].fileName) < strings.ToLower(entries[j].fileName)
@@ -46,9 +50,7 @@ func isHidden(path string, isDir bool) bool {
 
 	return attributes&syscall.FILE_ATTRIBUTE_HIDDEN != 0
 }
-func isWSL() bool {
-	return false
-}
+
 func getDrives() ([]string, error) {
 	n, err := windows.GetLogicalDriveStrings(0, nil)
 	if err != nil {
@@ -80,11 +82,11 @@ func getDiskSpaceAvailable(drives []string) map[string]uint64 {
 		var freeBytesAvailable uint64
 		var totalNumberOfBytes uint64
 		var totalNumberOfFreeBytes uint64
-
-		windows.GetDiskFreeSpaceEx(windows.StringToUTF16Ptr(strings.ReplaceAll(v, "\\", "")),
+		driveName := strings.ReplaceAll(v, ":\\", "")
+		windows.GetDiskFreeSpaceEx(windows.StringToUTF16Ptr(driveName+":"),
 			&freeBytesAvailable, &totalNumberOfBytes, &totalNumberOfFreeBytes)
 
-		diskSpaces[v] = freeBytesAvailable / 1024 / 1024 / 1024
+		diskSpaces[driveName] = freeBytesAvailable / 1024 / 1024 / 1024
 	}
 
 	return diskSpaces

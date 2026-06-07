@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -9,6 +10,26 @@ import (
 
 	"golang.org/x/sys/unix"
 )
+
+func getDrives() ([]string, error) {
+	var drives []string
+
+	file, err := os.Open("/proc/mounts")
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := scanner.Text()
+		fields := strings.Fields(line)
+
+		if len(fields) >= 4 && strings.Contains(fields[0], "/dev/") {
+			drives = append(drives, fields[0])
+		}
+	}
+	return drives, nil
+}
 
 func sortByNameAsc(entries []stFile) {
 	sort.Slice(entries, func(i, j int) bool {
@@ -32,13 +53,11 @@ func isWSL() bool {
 }
 
 func getDiskSpaceAvailable(drives []string) map[string]uint64 {
-	var stat unix.Statfs_t
-
-	wd, _ := os.Getwd()
-
-	unix.Statfs(wd, &stat)
-	return nil
-
+	disks := make(map[string]uint64)
+	for _, v := range drives {
+		var stat unix.Statfs_t
+		unix.Statfs(v, &stat)
+		disks[v] = (stat.Bfree * uint64(stat.Bsize)) / 1024 / 1024 / 1024
+	}
+	return disks
 }
-
-func getDrives() ([]string, error)
