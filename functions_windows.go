@@ -1,10 +1,13 @@
 package main
 
 import (
+	"fmt"
 	"path/filepath"
 	"sort"
 	"strings"
 	"syscall"
+
+	"golang.org/x/sys/windows"
 )
 
 func sortByNameAsc(entries []stFile) {
@@ -45,4 +48,44 @@ func isHidden(path string, isDir bool) bool {
 }
 func isWSL() bool {
 	return false
+}
+func getDrives() ([]string, error) {
+	n, err := windows.GetLogicalDriveStrings(0, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed getting buffer size: %w", err)
+	}
+
+	buf := make([]uint16, n)
+	_, err = windows.GetLogicalDriveStrings(uint32(len(buf)), &buf[0])
+	if err != nil {
+		return nil, fmt.Errorf("failed retrieving drive strings: %w", err)
+	}
+
+	var drives []string
+	from := 0
+	for i, v := range buf {
+		if v == 0 {
+			if i > from {
+				drives = append(drives, string(windows.UTF16ToString(buf[from:i])))
+			}
+			from = i + 1
+		}
+	}
+
+	return drives, nil
+}
+func getDiskSpaceAvailable(drives []string) map[string]uint64 {
+	diskSpaces := make(map[string]uint64)
+	for _, v := range drives {
+		var freeBytesAvailable uint64
+		var totalNumberOfBytes uint64
+		var totalNumberOfFreeBytes uint64
+
+		windows.GetDiskFreeSpaceEx(windows.StringToUTF16Ptr(strings.ReplaceAll(v, "\\", "")),
+			&freeBytesAvailable, &totalNumberOfBytes, &totalNumberOfFreeBytes)
+
+		diskSpaces[v] = freeBytesAvailable / 1024 / 1024 / 1024
+	}
+
+	return diskSpaces
 }

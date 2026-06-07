@@ -35,6 +35,7 @@ var commands = map[string]func([]string){
 	"checkip": checkip,
 	"track":   track,
 	"open":    open,
+	"disk":    disk,
 	"pwd": func(args []string) {
 		wd, err := os.Getwd()
 		if err != nil {
@@ -512,14 +513,26 @@ func open(args []string) {
 	e := exec.Command(cmd, execArgs...)
 	err := e.Start()
 	if err != nil {
-		fmt.Printf("ERROR: %s", err)
+		fmt.Printf("ERROR: %s\n", err)
 		return
 	}
 	err = e.Wait()
 	if err != nil {
-		fmt.Printf("ERROR: %s", err)
+		fmt.Printf("ERROR: %s\n", err)
 		return
 	}
 
+	return
+}
+
+func disk(args []string) {
+	drives, err := getDrives()
+	if err != nil {
+		fmt.Printf("ERROR: Unable to retreive drives - %s", err)
+		return
+	}
+	for drive, space := range getDiskSpaceAvailable(drives) {
+		fmt.Printf("%s: %dGB\n", drive, space)
+	}
 	return
 }

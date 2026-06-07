@@ -1,10 +1,13 @@
 package main
 
 import (
+	"os"
 	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
+
+	"golang.org/x/sys/unix"
 )
 
 func sortByNameAsc(entries []stFile) {
@@ -27,3 +30,15 @@ func isWSL() bool {
 	}
 	return strings.Contains(strings.ToLower(string(releaseData)), "microsoft")
 }
+
+func getDiskSpaceAvailable(drives []string) map[string]uint64 {
+	var stat unix.Statfs_t
+
+	wd, _ := os.Getwd()
+
+	unix.Statfs(wd, &stat)
+	return nil
+
+}
+
+func getDrives() ([]string, error)
