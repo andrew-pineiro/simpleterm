@@ -48,14 +48,6 @@ var commands = map[string]func([]string){
 	},
 }
 
-type stFile struct {
-	fileName    string
-	fileModTime string
-	fileMode    fs.FileMode
-	fileIsDir   bool
-	fileSize    string
-}
-
 func not(args []string) {
 	f := "UNKNOWN"
 	if len(args) > 0 {
@@ -541,13 +533,41 @@ func disk(args []string) {
 		return
 	}
 	slices.Sort(drives)
+	maxDiskLen := len("Disk")
+	maxSizeLen := len("Size GB")
+	maxUsedLen := len("Used GB")
+	maxAvailLen := len("Available")
 
-	for drive, space := range getDiskSpaceAvailable(drives) {
+	disks := getDiskSpaceAvailable(drives)
+	for _, drive := range disks {
+		if len(drive.driveName) > maxDiskLen {
+			maxDiskLen = len(drive.driveName)
+		}
+	}
+	fmt.Printf("%-*s  %-*s  %-*s  %-*s\n",
+		maxDiskLen, "Disk",
+		maxSizeLen, "Size",
+		maxUsedLen, "Used",
+		maxAvailLen, "Available")
+
+	fmt.Printf("%s  %s  %s  %s\n",
+		strings.Repeat("-", maxDiskLen),
+		strings.Repeat("-", maxSizeLen),
+		strings.Repeat("-", maxUsedLen),
+		strings.Repeat("-", maxAvailLen))
+	for _, drive := range disks {
 		//TODO: implement a check for non-storage drives like disc drives.
-		if space <= 0 {
+		if drive.availSpace <= 0 {
 			continue
 		}
-		fmt.Printf("%s: %d GB Remaining\n", drive, space)
+		tot := fmt.Sprint(drive.totalSpace/1024/1024/1024) + " GB"
+		used := fmt.Sprint(drive.usedSpace/1024/1024/1024) + " GB"
+		avail := fmt.Sprint(drive.availSpace/1024/1024/1024) + " GB"
+		fmt.Printf("%-*s   %-*s  %-*s  %-*s\n",
+			maxDiskLen, drive.driveName,
+			maxSizeLen, tot,
+			maxUsedLen, used,
+			maxAvailLen, avail)
 	}
 	return
 }

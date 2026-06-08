@@ -76,8 +76,8 @@ func getDrives() ([]string, error) {
 
 	return drives, nil
 }
-func getDiskSpaceAvailable(drives []string) map[string]uint64 {
-	diskSpaces := make(map[string]uint64)
+func getDiskSpaceAvailable(drives []string) []stDisk {
+	var disks []stDisk
 	for _, v := range drives {
 		var freeBytesAvailable uint64
 		var totalNumberOfBytes uint64
@@ -85,9 +85,13 @@ func getDiskSpaceAvailable(drives []string) map[string]uint64 {
 		driveName := strings.ReplaceAll(v, ":\\", "")
 		windows.GetDiskFreeSpaceEx(windows.StringToUTF16Ptr(driveName+":"),
 			&freeBytesAvailable, &totalNumberOfBytes, &totalNumberOfFreeBytes)
-
-		diskSpaces[driveName] = freeBytesAvailable / 1024 / 1024 / 1024
+		disks = append(disks, stDisk{
+			driveName:  driveName,
+			totalSpace: totalNumberOfBytes,
+			availSpace: totalNumberOfFreeBytes,
+			usedSpace:  totalNumberOfBytes - totalNumberOfFreeBytes,
+		})
 	}
 
-	return diskSpaces
+	return disks
 }
