@@ -12,6 +12,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -35,6 +36,8 @@ var commands = map[string]func([]string){
 	"checkip": checkip,
 	"track":   track,
 	"open":    open,
+	"disk":    disk,
+	"help":    not,
 	"pwd": func(args []string) {
 		wd, err := os.Getwd()
 		if err != nil {
@@ -45,14 +48,13 @@ var commands = map[string]func([]string){
 	},
 }
 
-type stFile struct {
-	fileName    string
-	fileModTime string
-	fileMode    fs.FileMode
-	fileIsDir   bool
-	fileSize    string
+func not(args []string) {
+	f := "UNKNOWN"
+	if len(args) > 0 {
+		f = args[0]
+	}
+	fmt.Printf("ERROR: not implemented - %s\n", f)
 }
-
 func tryExecute(program string, args []string) bool {
 	_, err := exec.LookPath(program)
 	if err != nil {
@@ -512,14 +514,60 @@ func open(args []string) {
 	e := exec.Command(cmd, execArgs...)
 	err := e.Start()
 	if err != nil {
-		fmt.Printf("ERROR: %s", err)
+		fmt.Printf("ERROR: %s\n", err)
 		return
 	}
 	err = e.Wait()
 	if err != nil {
-		fmt.Printf("ERROR: %s", err)
+		fmt.Printf("ERROR: %s\n", err)
 		return
 	}
 
+	return
+}
+
+func disk(args []string) {
+	drives, err := getDrives()
+	if err != nil {
+		fmt.Printf("ERROR: Unable to retreive drives - %s", err)
+		return
+	}
+	slices.Sort(drives)
+	maxDiskLen := len("Disk")
+	maxSizeLen := len("Size GB")
+	maxUsedLen := len("Used GB")
+	maxAvailLen := len("Available")
+
+	disks := getDiskSpaceAvailable(drives)
+	for _, drive := range disks {
+		if len(drive.driveName) > maxDiskLen {
+			maxDiskLen = len(drive.driveName)
+		}
+	}
+	fmt.Printf("%-*s  %-*s  %-*s  %-*s\n",
+		maxDiskLen, "Disk",
+		maxSizeLen, "Size",
+		maxUsedLen, "Used",
+		maxAvailLen, "Available")
+
+	fmt.Printf("%s  %s  %s  %s\n",
+		strings.Repeat("-", maxDiskLen),
+		strings.Repeat("-", maxSizeLen),
+		strings.Repeat("-", maxUsedLen),
+		strings.Repeat("-", maxAvailLen))
+	for _, drive := range disks {
+		//TODO: implement a check for non-storage drives like disc drives.
+		if drive.availSpace <= 0 {
+			continue
+		}
+		tot := fmt.Sprint(drive.totalSpace/1024/1024/1024) + " GB"
+		used := fmt.Sprint(drive.usedSpace/1024/1024/1024) + " GB"
+		avail := fmt.Sprint(drive.availSpace/1024/1024/1024) + " GB"
+		fmt.Printf("%-*s   %-*s  %-*s  %-*s\n",
+			maxDiskLen, drive.driveName,
+			maxSizeLen, tot,
+			maxUsedLen, used,
+			maxAvailLen, avail)
+	}
 	return
 }
