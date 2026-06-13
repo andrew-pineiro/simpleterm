@@ -1,20 +1,74 @@
 BINARY_NAME=sterm
 BUILD_DIR=build
-OLD_DIR=$(BUILD_DIR)/.old
 
-GOOS ?= $(shell go env GOOS)
-GOARCH ?= $(shell go env GOARCH)
+GOOS        ?= $(shell go env GOOS)
+GOARCH      ?= $(shell go env GOARCH)
+CGO_ENABLED ?= $(shell go env CGO_ENABLED)
+BINARY_EXT  ?=
 
-.PHONY: build build-all
+export GOOS
+export GOARCH
+export CGO_ENABLED
 
-# Single build with specified GOOS/GOARCH
-build:
-	go build -o $(BUILD_DIR)/$(BINARY_NAME)-$(GOOS)-$(GOARCH).exe
+PUB     ?= false
+PUB_DIR ?= $(BUILD_DIR)/publish
 
-# Build for multiple platforms
-build-all:
-        GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o $(BUILD_DIR)/$(BINARY_NAME)-linux-amd64
-        GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -o $(BUILD_DIR)/$(BINARY_NAME)-linux-arm64
-        GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -o $(BUILD_DIR)/$(BINARY_NAME)-windows-amd64.exe
-        GOOS=darwin GOARCH=amd64 CGO_ENABLED=0 go build -o $(BUILD_DIR)/$(BINARY_NAME)-darwin-amd64
-        GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 go build -o $(BUILD_DIR)/$(BINARY_NAME)-darwin-arm64
+# Set different command styles based on OS
+ifeq ($(OS),Windows_NT)
+    MKDIR    := powershell -Command New-Item -ItemType Directory -Force
+    CP       := copy /y
+    RM       := del /f /q
+    FIX_PATH  = $(subst /,\\,$(1))
+else
+    MKDIR    := mkdir -p
+    CP       := cp
+    RM       := rm -f
+    FIX_PATH  = $(1)
+endif
+
+.PHONY: publish delete \
+        build build-all \
+        build-binary build-all-binaries \
+        build-linux-amd64 build-linux-arm64 \
+        build-windows-amd64 \
+        build-darwin-amd64 build-darwin-arm64
+
+# Single build
+ifeq ($(PUB),true)
+build: delete build-binary publish
+build-all: delete build-all-binaries
+else
+build: delete build-binary
+build-all: delete build-all-binaries
+endif
+
+# Single build (uses GOOS/GOARCH/CGO_ENABLED from environment)
+build-binary:
+	go build -o $(BUILD_DIR)/$(BINARY_NAME)-$(GOOS)-$(GOARCH)$(BINARY_EXT)
+
+# Build for multiple platforms — works on Windows (cmd.exe) and Unix
+# MacOS not support currently.
+build-all-binaries: build-linux-amd64 build-linux-arm64 build-windows-amd64 #build-darwin-amd64 build-darwin-arm64
+
+# Per-platform targets call build-binary directly, NOT build, to avoid re-running delete
+build-linux-amd64:
+	$(MAKE) build-binary GOOS=linux GOARCH=amd64 CGO_ENABLED=0 BINARY_EXT=
+
+build-linux-arm64:
+	$(MAKE) build-binary GOOS=linux GOARCH=arm64 CGO_ENABLED=0 BINARY_EXT=
+
+build-windows-amd64:
+	$(MAKE) build-binary GOOS=windows GOARCH=amd64 CGO_ENABLED=0 BINARY_EXT=.exe
+
+build-darwin-amd64:
+	$(MAKE) build-binary GOOS=darwin GOARCH=amd64 CGO_ENABLED=0 BINARY_EXT=
+
+build-darwin-arm64:
+	$(MAKE) build-binary GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 BINARY_EXT=
+
+publish:
+	@$(MKDIR) $(call FIX_PATH,$(PUB_DIR))
+	$(CP) $(call FIX_PATH,$(BUILD_DIR)/*) $(call FIX_PATH,$(PUB_DIR)/)
+
+delete:
+	$(RM) $(call FIX_PATH,$(BUILD_DIR)/*)

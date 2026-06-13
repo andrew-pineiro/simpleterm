@@ -10,7 +10,16 @@ import (
 	"github.com/chzyer/readline"
 )
 
-const HIST_FILENAME = "sterm.hst"
+const (
+	HIST_FILENAME = "sterm.hst"
+	ASCII_ART     = ` 	 
+ ▄▄▄▄ ▄▄ ▄▄   ▄▄ ▄▄▄▄  ▄▄    ▄▄▄▄▄ ▄▄▄▄▄▄ ▄▄▄▄▄ ▄▄▄▄  ▄▄   ▄▄ 
+███▄▄ ██ ██▀▄▀██ ██▄█▀ ██    ██▄▄    ██   ██▄▄  ██▄█▄ ██▀▄▀██ 
+▄▄██▀ ██ ██   ██ ██    ██▄▄▄ ██▄▄▄   ██   ██▄▄▄ ██ ██ ██   ██ 
+
+
+`
+)
 
 func filterInput(r rune) (rune, bool) {
 	switch r {
@@ -25,6 +34,7 @@ func newRlInstance() *readline.Instance {
 	homeDir, _ := os.UserHomeDir()
 	histDir := path.Join(homeDir, ".sterm")
 	_ = os.Mkdir(histDir, 0700)
+	fmt.Printf("%s\n", strings.Trim(ASCII_ART, " "))
 	cfg := &readline.Config{
 		HistoryFile:     path.Join(histDir, HIST_FILENAME),
 		InterruptPrompt: "^C",
