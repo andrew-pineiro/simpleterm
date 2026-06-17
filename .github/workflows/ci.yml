@@ -48,7 +48,7 @@ jobs:
 
       - name: Smoke test - echo command
         run: |
-          OUTPUT=$(./sterm${{ matrix.os == 'windows-latest' && '.exe' || '' }} -c "echo hello_ci")
+          OUTPUT=$(./sterm -c "echo hello_ci")
           echo "$OUTPUT"
           echo "$OUTPUT" | grep -q "hello_ci" || (echo "FAIL" && exit 1)
 
@@ -71,6 +71,14 @@ jobs:
         if: matrix.os == 'windows-latest'
         shell: pwsh
         run: .\sterm.exe -c "pwd"
+
+      - name: Smoke test - echo command (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          $output = .\sterm.exe -c "echo hello_ci"
+          Write-Output $output
+          if ($output -notmatch "hello_ci") { Write-Error "FAIL: echo output not found"; exit 1 }
 
       - name: Smoke test - help command (Windows)
         if: matrix.os == 'windows-latest'
