@@ -84,6 +84,15 @@ func main() {
 	homeDir, _ := os.UserHomeDir()
 	os.Chdir(homeDir)
 
+	if len(os.Args) == 3 && os.Args[1] == "-c" {
+		cmd, args := parseCmdArgs(os.Args[2])
+		if !tryCmd(cmd, args) {
+			fmt.Printf("Command not found %s\n", cmd)
+			os.Exit(1)
+		}
+		return
+	}
+
 	reader := newRlInstance()
 	reader.CaptureExitSignal()
 
