@@ -95,4 +95,4 @@ jobs:
         run: |
           $output = .\sterm.exe -c "disk"
           Write-Output $output
-          if ($output -notcontains "GB") { Write-Error "FAIL: disk output not found"; exit 1 }
+          if ($output -notmatch ".+GB") { Write-Error "FAIL: disk output not found"; exit 1 }
