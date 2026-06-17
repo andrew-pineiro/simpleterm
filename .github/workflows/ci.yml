@@ -70,26 +70,33 @@ jobs:
       # --- Smoke tests (Windows) ---
       - name: Smoke test - starts and exits cleanly (Windows)
         if: matrix.os == 'windows-latest'
+        shell: pwsh
         run: |
-          echo exit | .\sterm.exe
+          "exit" | Out-File -Encoding ascii input.txt
+          .\sterm.exe < input.txt
 
       - name: Smoke test - echo command (Windows)
         if: matrix.os == 'windows-latest'
+        shell: pwsh
         run: |
-          $output = "echo hello_ci`nexit" | .\sterm.exe
+          "echo hello_ci`nexit" | Out-File -Encoding ascii input.txt
+          $output = .\sterm.exe < input.txt
           Write-Output $output
           if ($output -notmatch "hello_ci") { Write-Error "FAIL: echo output not found"; exit 1 }
 
       - name: Smoke test - help command (Windows)
         if: matrix.os == 'windows-latest'
+        shell: pwsh
         run: |
-          $output = "help`nexit" | .\sterm.exe
-          Write-Output $output
-          if ($output -notmatch "Available Commands - ") { Write-Error "FAIL: help output not found"; exit 1 }
+            "help`nexit" | Out-File -Encoding ascii input.txt
+            $output = .\sterm.exe < input.txt
+            Write-Output $output
+            if ($output -notmatch "Available commands") { Write-Error "FAIL: help output not found"; exit 1 }
 
       - name: Smoke test - disk command (Windows)
         if: matrix.os == 'windows-latest'
         run: |
-            $output = "help`nexit" | .\sterm.exe
+            "disk`nexit" | Out-File -Encoding ascii input.txt
+            $output = .\sterm.exe < input.txt
             Write-Output $output
             if ($output -notmatch "GB") { Write-Error "FAIL: disk output not found"; exit 1}
