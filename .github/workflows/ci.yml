@@ -87,7 +87,7 @@ jobs:
         run: |
           $output = .\sterm.exe -c "help"
           Write-Output $output
-          if ($output -notmatch "Available commands") { Write-Error "FAIL: help output not found"; exit 1 }
+          if ($output -notmatch "Available Commands - ") { Write-Error "FAIL: help output not found"; exit 1 }
 
       - name: Smoke test - disk command (Windows)
         if: matrix.os == 'windows-latest'
