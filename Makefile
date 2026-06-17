@@ -15,10 +15,11 @@ PUB_DIR ?= $(BUILD_DIR)/publish
 
 # Set different command styles based on OS
 ifeq ($(OS),Windows_NT)
-    MKDIR    := powershell -Command New-Item -ItemType Directory -Force
-    CP       := copy /y
-    RM       := del /f /q
-    FIX_PATH  = $(subst /,\\,$(1))
+    MKDIR     := powershell -Command New-Item -ItemType Directory -Force
+    CP        := copy /y
+    RM        := del /f /q
+    FIX_PATH   = $(subst /,\\,$(1))
+	BINARY_EXT = .exe
 else
     MKDIR    := mkdir -p
     CP       := cp

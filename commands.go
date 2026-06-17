@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"maps"
 	"math/big"
 	"net"
 	"net/http"
@@ -22,39 +23,97 @@ import (
 	"golang.org/x/net/ipv4"
 )
 
-// TODO: add generic help printing to all commands
-var commands = map[string]func([]string){
-	"rm":      rm,
-	"cd":      cd,
-	"ls":      ls,
-	"dir":     ls, // alias
-	"file":    file,
-	"echo":    echo,
-	"cp":      cp,
-	"cat":     cat,
-	"ping":    ping,
-	"checkip": checkip,
-	"track":   track,
-	"open":    open,
-	"disk":    disk,
-	"help":    not,
-	"pwd": func(args []string) {
-		wd, err := os.Getwd()
-		if err != nil {
-			fmt.Println("Error:", err)
-			return
-		}
-		fmt.Println(wd)
+type command struct {
+	fn          func([]string)
+	description string
+	usage       string
+}
+
+func (c command) printHelp(name string) {
+	fmt.Printf("Usage: %s %s\n", name, c.usage)
+	fmt.Printf("  %s\n", c.description)
+}
+
+var commands = map[string]command{
+	"rm": {
+		fn:          rm,
+		description: "Remove a file or files matching a pattern",
+		usage:       "<file|pattern>",
+	},
+	"cd": {
+		fn:          cd,
+		description: "Change the current working directory",
+		usage:       "<path>",
+	},
+	"ls": {
+		fn:          ls,
+		description: "List directory contents",
+		usage:       "[-h|-la] [path] [*.ext]",
+	},
+	"dir": {
+		fn:          ls,
+		description: "List directory contents (alias for ls)",
+		usage:       "[-h|-la] [path] [*.ext]",
+	},
+	"file": {
+		fn:          file,
+		description: "Show the MIME type of a file",
+		usage:       "<file>",
+	},
+	"echo": {
+		fn:          echo,
+		description: "Print arguments to stdout",
+		usage:       "<text...>",
+	},
+	"cp": {
+		fn:          cp,
+		description: "Copy a file to a destination",
+		usage:       "<source> <dest>",
+	},
+	"cat": {
+		fn:          cat,
+		description: "Print the contents of a file",
+		usage:       "<file>",
+	},
+	"ping": {
+		fn:          ping,
+		description: "Send ICMP echo requests to an IP address (4 pings)",
+		usage:       "<ip>",
+	},
+	"checkip": {
+		fn:          checkip,
+		description: "Display local network interfaces and public IP address",
+		usage:       "",
+	},
+	"track": {
+		fn:          track,
+		description: "Open a package tracking page for a UPS, FedEx, or USPS tracking number",
+		usage:       "<tracking-number>",
+	},
+	"open": {
+		fn:          open,
+		description: "Open a URL in the default browser",
+		usage:       "<url>",
+	},
+	"disk": {
+		fn:          disk,
+		description: "Show disk space usage for all drives",
+		usage:       "",
+	},
+	"pwd": {
+		fn: func(args []string) {
+			wd, err := os.Getwd()
+			if err != nil {
+				fmt.Println("Error:", err)
+				return
+			}
+			fmt.Println(wd)
+		},
+		description: "Print the current working directory",
+		usage:       "",
 	},
 }
 
-func not(args []string) {
-	f := "UNKNOWN"
-	if len(args) > 0 {
-		f = args[0]
-	}
-	fmt.Printf("ERROR: not implemented - %s\n", f)
-}
 func tryExecute(program string, args []string) bool {
 	_, err := exec.LookPath(program)
 	if err != nil {
@@ -85,8 +144,23 @@ func tryExecute(program string, args []string) bool {
 }
 
 func tryCmd(cmd string, args []string) bool {
-	if fn, ok := commands[cmd]; ok {
-		fn(args)
+	if strings.ToLower(cmd) == "help" {
+		for _, cmd := range slices.Collect(maps.Keys(commands)) {
+			c := commands[cmd]
+			fmt.Printf("%s\n", cmd)
+
+			c.printHelp(cmd)
+			fmt.Println()
+		}
+		return true
+	}
+
+	if c, ok := commands[cmd]; ok {
+		if len(args) > 0 && (args[0] == "--help" || args[0] == "-h") {
+			c.printHelp(cmd)
+			return true
+		}
+		c.fn(args)
 		return true
 	}
 	return false
