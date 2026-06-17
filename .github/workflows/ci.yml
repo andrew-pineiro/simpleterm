@@ -60,6 +60,13 @@ jobs:
           echo "$OUTPUT"
           echo "$OUTPUT" | grep -q "Available Commands -" || (echo "FAIL: help output not found" && exit 1)
 
+      - name: Smoke test - disk command
+        if: matrix.os != 'windows-latest'
+        run: |
+            OUTPUT=$(printf 'disk\nexit\n' | ./sterm)
+            echo "$OUTPUT"
+            echo "$OUTPUT" | grep -q "GB" || (echo "FAIL: disk output not found" && exit 1)
+
       # --- Smoke tests (Windows) ---
       - name: Smoke test - starts and exits cleanly (Windows)
         if: matrix.os == 'windows-latest'
@@ -79,3 +86,10 @@ jobs:
           $output = "help`nexit" | .\sterm.exe
           Write-Output $output
           if ($output -notmatch "Available Commands - ") { Write-Error "FAIL: help output not found"; exit 1 }
+
+      - name: Smoke test - disk command (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+            $output = "help`nexit" | .\sterm.exe
+            Write-Output $output
+            if ($output -notmatch "GB") { Write-Error "FAIL: disk output not found"; exit 1}
