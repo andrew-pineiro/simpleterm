@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"path/filepath"
-	"sort"
 	"strings"
 	"syscall"
 
@@ -12,12 +11,6 @@ import (
 
 func isWSL() bool {
 	return false
-}
-
-func sortByNameAsc(entries []stFile) {
-	sort.Slice(entries, func(i, j int) bool {
-		return strings.ToLower(entries[i].fileName) < strings.ToLower(entries[j].fileName)
-	})
 }
 
 // checks if a file is hidden on Windows.

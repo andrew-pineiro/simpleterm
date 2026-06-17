@@ -47,9 +47,8 @@ endif
 build-binary:
 	go build -o $(BUILD_DIR)/$(BINARY_NAME)-$(GOOS)-$(GOARCH)$(BINARY_EXT)
 
-# Build for multiple platforms — works on Windows (cmd.exe) and Unix
-# MacOS not support currently.
-build-all-binaries: build-linux-amd64 build-linux-arm64 build-windows-amd64 #build-darwin-amd64 build-darwin-arm64
+# Build for multiple platforms — works on Windows (cmd.exe), Linux, & MacOS
+build-all-binaries: build-linux-amd64 build-linux-arm64 build-windows-amd64 build-darwin-amd64 build-darwin-arm64
 
 # Per-platform targets call build-binary directly, NOT build, to avoid re-running delete
 build-linux-amd64:

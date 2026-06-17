@@ -6,7 +6,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"slices"
-	"sort"
 	"strings"
 
 	"golang.org/x/sys/unix"
@@ -29,12 +28,6 @@ func getDrives() ([]string, error) {
 		}
 	}
 	return drives, nil
-}
-
-func sortByNameAsc(entries []stFile) {
-	sort.Slice(entries, func(i, j int) bool {
-		return strings.ToLower(entries[i].fileName) < strings.ToLower(entries[j].fileName)
-	})
 }
 
 func isHidden(path string, _ bool) bool {
