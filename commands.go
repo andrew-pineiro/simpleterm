@@ -145,6 +145,7 @@ func tryExecute(program string, args []string) bool {
 
 func tryCmd(cmd string, args []string) bool {
 	if strings.ToLower(cmd) == "help" {
+		fmt.Printf("Available Commands -\n\n")
 		for _, cmd := range slices.Collect(maps.Keys(commands)) {
 			c := commands[cmd]
 			fmt.Printf("%s\n", cmd)

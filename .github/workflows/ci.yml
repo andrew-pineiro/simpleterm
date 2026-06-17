@@ -58,7 +58,7 @@ jobs:
         run: |
           OUTPUT=$(printf 'help\nexit\n' | ./sterm)
           echo "$OUTPUT"
-          echo "$OUTPUT" | grep -q "Available commands" || (echo "FAIL: help output not found" && exit 1)
+          echo "$OUTPUT" | grep -q "Available Commands -" || (echo "FAIL: help output not found" && exit 1)
 
       # --- Smoke tests (Windows) ---
       - name: Smoke test - starts and exits cleanly (Windows)
@@ -78,4 +78,4 @@ jobs:
         run: |
           $output = "help`nexit" | .\sterm.exe
           Write-Output $output
-          if ($output -notmatch "Available commands") { Write-Error "FAIL: help output not found"; exit 1 }
+          if ($output -notmatch "Available Commands - ") { Write-Error "FAIL: help output not found"; exit 1 }
