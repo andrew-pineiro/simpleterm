@@ -95,6 +95,6 @@ jobs:
         run: |
           $output = .\sterm.exe -c "disk"
           Write-Output $output
-          $passed = false
-          $output.Split("`n") | % { if($_ -match ".+GB") { $passed = true } }
+          $passed = $false
+          $output.Split("`n") | % { if($_ -match ".+GB") { $passed = $true } }
           if(!$passed) { Write-Error "FAIL: disk output not found"; exit 1 }
