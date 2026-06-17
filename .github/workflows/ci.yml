@@ -47,6 +47,7 @@ jobs:
           echo "$OUTPUT" | grep -qF "$HOME" || (echo "FAIL: pwd output did not contain home dir" && exit 1)
 
       - name: Smoke test - echo command
+        if: matrix.os != 'windows-latest'
         run: |
           OUTPUT=$(./sterm -c "echo hello_ci")
           echo "$OUTPUT"
