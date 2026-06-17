@@ -7,8 +7,8 @@ on:
     branches: [master]
 
 jobs:
-  build:
-    name: Build (${{ matrix.os }})
+  build-and-test:
+    name: Build & Test (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -32,4 +32,50 @@ jobs:
         run: go vet ./...
 
       - name: Build
-        run: go build -v ./...
+        run: go build -v -o sterm${{ matrix.os == 'windows-latest' && '.exe' || '' }} .
+
+      # --- Smoke tests (Unix) ---
+      - name: Smoke test - starts and exits cleanly
+        if: matrix.os != 'windows-latest'
+        run: printf 'exit\n' | ./sterm
+
+      - name: Smoke test - pwd command
+        if: matrix.os != 'windows-latest'
+        run: |
+          OUTPUT=$(printf 'pwd\nexit\n' | ./sterm)
+          echo "$OUTPUT"
+          echo "$OUTPUT" | grep -qF "$HOME" || (echo "FAIL: pwd output did not contain home dir" && exit 1)
+
+      - name: Smoke test - echo command
+        if: matrix.os != 'windows-latest'
+        run: |
+          OUTPUT=$(printf 'echo hello_ci\nexit\n' | ./sterm)
+          echo "$OUTPUT"
+          echo "$OUTPUT" | grep -q "hello_ci" || (echo "FAIL: echo output not found" && exit 1)
+
+      - name: Smoke test - help command
+        if: matrix.os != 'windows-latest'
+        run: |
+          OUTPUT=$(printf 'help\nexit\n' | ./sterm)
+          echo "$OUTPUT"
+          echo "$OUTPUT" | grep -q "Available commands" || (echo "FAIL: help output not found" && exit 1)
+
+      # --- Smoke tests (Windows) ---
+      - name: Smoke test - starts and exits cleanly (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          echo exit | .\sterm.exe
+
+      - name: Smoke test - echo command (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          $output = "echo hello_ci`nexit" | .\sterm.exe
+          Write-Output $output
+          if ($output -notmatch "hello_ci") { Write-Error "FAIL: echo output not found"; exit 1 }
+
+      - name: Smoke test - help command (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          $output = "help`nexit" | .\sterm.exe
+          Write-Output $output
+          if ($output -notmatch "Available commands") { Write-Error "FAIL: help output not found"; exit 1 }
