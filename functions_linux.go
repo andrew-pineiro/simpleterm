@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -68,8 +67,6 @@ func getDiskSpaceAvailable(drives []string) []stDisk {
 func getMemoryInfo() (stMem, error) {
 	var mem stMem
 
-	////////
-
 	file, err := os.Open("/proc/meminfo")
 	if err != nil {
 		return mem, err
@@ -85,10 +82,8 @@ func getMemoryInfo() (stMem, error) {
 			continue
 		}
 
-		// Clean the key name (strip the trailing colon)
 		key := strings.TrimSuffix(fields[0], ":")
 
-		// Parse the numeric string into an integer
 		valKb, err := strconv.ParseInt(fields[1], 10, 64)
 		if err != nil {
 			continue
@@ -103,10 +98,6 @@ func getMemoryInfo() (stMem, error) {
 	if err := scanner.Err(); err != nil {
 		return mem, err
 	}
-
-	/////////
-
-	fmt.Println("not implemented for Linux")
 	return mem, nil
 
 }

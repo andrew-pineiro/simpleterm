@@ -60,13 +60,20 @@ jobs:
           echo "$OUTPUT"
           echo "$OUTPUT" | grep -q "Available Commands -" || (echo "FAIL: help output not found" && exit 1)
 
-      # TODO: get disk command working with MacOS
       - name: Smoke test - disk command
-        if: matrix.os != 'windows-latest' && matrix.os != 'macos-latest'
+        if: matrix.os != 'windows-latest'
         run: |
             OUTPUT=$(./sterm -c "disk")
             echo "$OUTPUT"
             echo "$OUTPUT" | grep -q "GB" || (echo "FAIL: disk output not found" && exit 1)
+
+      # TODO: add mem command to macos
+      - name: Smoke test - mem command
+        if: matrix.os != 'windows-latest' && matrix.os != 'macos-latest'
+        run: |
+            OUTPUT=$(./sterm -c "mem -h")
+            echo "$OUTPUT"
+            echo "$OUTPUT" | grep -q "GB" || (echo "FAIL: mem output not found" && exit 1)
 
       # --- Smoke tests (Windows specific) ---
       - name: Smoke test - starts and exits cleanly (Windows)
@@ -99,3 +106,13 @@ jobs:
           $passed = $false
           $output.Split("`n") | % { if($_ -match ".+GB") { $passed = $true } }
           if(!$passed) { Write-Error "FAIL: disk output not found"; exit 1 }
+
+      - name: Smoke test - mem command (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          $output = .\sterm.exe -c "mem -h"
+          Write-Output $output
+          $passed = $false
+          $output.Split("`n") | % { if($_ -match ".+GB") { $passed = $true } }
+          if(!$passed) { Write-Error "FAIL: mem output not found"; exit 1 }

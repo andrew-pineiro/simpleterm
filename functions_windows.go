@@ -5,9 +5,22 @@ import (
 	"path/filepath"
 	"strings"
 	"syscall"
+	"unsafe"
 
 	"golang.org/x/sys/windows"
 )
+
+type stMemWindows struct {
+	cbSize                  uint32
+	dwMemoryLoad            uint32
+	ullTotalPhys            uint64
+	ullAvailPhys            uint64
+	ullTotalPageFile        uint64
+	ullAvailPageFile        uint64
+	ullTotalVirtual         uint64
+	ullAvailVirtaul         uint64
+	ullAvailExtendedVirtual uint64
+}
 
 func isWSL() bool {
 	return false
@@ -90,6 +103,19 @@ func getDiskSpaceAvailable(drives []string) []stDisk {
 }
 func getMemoryInfo() (stMem, error) {
 	var mem stMem
-	fmt.Println("not implemented for Windows")
+
+	kernal32 := syscall.NewLazyDLL("kernal32.dll")
+	globalMemStatusEx := kernal32.NewProc("GlobalMemoryStatusEx")
+
+	var memStatus stMemWindows
+	memStatus.cbSize = uint32(unsafe.Sizeof(memStatus))
+
+	ret, _, err := globalMemStatusEx.Call(uintptr(unsafe.Pointer(&memStatus)))
+	if ret == 0 {
+		return mem, err
+	}
+	mem.availMemory = int64(memStatus.ullAvailPhys)
+	mem.totalMemory = int64(memStatus.ullTotalPhys)
+	mem.freeMemory = int64(memStatus.ullTotalPhys - memStatus.ullAvailPhys)
 	return mem, nil
 }
