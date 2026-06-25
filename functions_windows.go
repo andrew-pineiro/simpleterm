@@ -104,7 +104,7 @@ func getDiskSpaceAvailable(drives []string) []stDisk {
 func getMemoryInfo() (stMem, error) {
 	var mem stMem
 
-	kernal32 := syscall.NewLazyDLL("kernal32.dll")
+	kernal32 := syscall.NewLazyDLL("kernel32.dll")
 	globalMemStatusEx := kernal32.NewProc("GlobalMemoryStatusEx")
 
 	var memStatus stMemWindows
