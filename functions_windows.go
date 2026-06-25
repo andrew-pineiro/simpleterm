@@ -88,3 +88,8 @@ func getDiskSpaceAvailable(drives []string) []stDisk {
 
 	return disks
 }
+func getMemoryInfo() (stMem, error) {
+	var mem stMem
+	fmt.Println("not implemented for Windows")
+	return mem, nil
+}

@@ -21,6 +21,13 @@ type stDisk struct {
 	availSpace uint64
 }
 
+type stMem struct {
+	totalMemory int64
+	usedMemory  int64
+	availMemory int64
+	freeMemory  int64
+}
+
 func sortByNameAsc(entries []stFile) {
 	sort.Slice(entries, func(i, j int) bool {
 		return strings.ToLower(entries[i].fileName) < strings.ToLower(entries[j].fileName)

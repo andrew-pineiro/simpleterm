@@ -100,6 +100,11 @@ var commands = map[string]command{
 		description: "Show disk space usage for all drives",
 		usage:       "",
 	},
+	"mem": {
+		fn:          mem,
+		description: "Show memory information about the system.",
+		usage:       "[-h]",
+	},
 	"pwd": {
 		fn: func(args []string) {
 			wd, err := os.Getwd()
@@ -157,7 +162,7 @@ func tryCmd(cmd string, args []string) bool {
 	}
 
 	if c, ok := commands[cmd]; ok {
-		if len(args) > 0 && (args[0] == "--help" || args[0] == "-h") {
+		if len(args) > 0 && (args[0] == "--help" || args[0] == "-?") {
 			c.printHelp(cmd)
 			return true
 		}
@@ -597,8 +602,6 @@ func open(args []string) {
 		fmt.Printf("ERROR: %s\n", err)
 		return
 	}
-
-	return
 }
 
 func disk(args []string) {
@@ -644,5 +647,34 @@ func disk(args []string) {
 			maxUsedLen, used,
 			maxAvailLen, avail)
 	}
-	return
+}
+
+func mem(args []string) {
+	mem, err := getMemoryInfo()
+	if err != nil {
+		fmt.Printf("ERROR: Could not retrieve memory info %s", err)
+		return
+	}
+	humanReadable := false
+	for _, arg := range args {
+		if arg == "-h" {
+			humanReadable = true
+		}
+	}
+	if humanReadable {
+		fmt.Printf("Total Memory: %d GB\n", mem.totalMemory/1e+9)
+		fmt.Printf("Free Memory: %d GB\n", mem.freeMemory/1e+9)
+		fmt.Printf("Available Memory: %d GB\n", mem.availMemory/1e+9)
+		if mem.usedMemory > 0 {
+			fmt.Printf("Used Memory: %d GB\n", mem.usedMemory/1e+9)
+		}
+	} else {
+		fmt.Printf("Total Memory: %d bytes\n", mem.totalMemory)
+		fmt.Printf("Free Memory: %d bytes\n", mem.freeMemory)
+		fmt.Printf("Available Memory: %d bytes\n", mem.availMemory)
+		if mem.usedMemory > 0 {
+			fmt.Printf("Used Memory: %d bytes\n", mem.usedMemory)
+		}
+	}
+
 }

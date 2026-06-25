@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"path/filepath"
 
 	"golang.org/x/sys/unix"
@@ -61,4 +62,9 @@ func getDiskSpaceAvailable(drives []string) []stDisk {
 		})
 	}
 	return disks
+}
+func getMemoryInfo() (stMem, error) {
+	var mem stMem
+	fmt.Println("not implemented for MacOS")
+	return mem, nil
 }
